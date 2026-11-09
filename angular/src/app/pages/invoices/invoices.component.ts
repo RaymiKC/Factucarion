@@ -6,7 +6,7 @@ import { DataService } from '../../services/data.service';
 import { PermissionsService } from '../../services/permissions.service';
 import { CompanyService } from '../../services/company.service';
 import { ModalComponent } from '../../components/modal.component';
-import { Invoice, InvoiceItem, Client, ProductService, TaxRate } from '../../services/supabase.service';
+import { Invoice, InvoiceItem, Client, ProductService, TaxRate } from '../../services/models';
 
 interface InvoiceItemForm { description: string; quantity: number; unit_price: number; tax_rate: number; discount_percent: number; product_id: string | null; }
 

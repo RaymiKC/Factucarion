@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { CreditCard, DollarSign, TrendingUp, Search } from 'lucide-react';
-import { supabase } from '../lib/supabase';
-import type { PaymentRecord, Invoice, Client } from '../lib/supabase';
+import { db } from '../lib/db';
+import type { PaymentRecord, Invoice, Client } from '../lib/types';
 import { useI18n } from '../lib/i18n';
 
 interface PaymentsProps {
@@ -25,7 +25,7 @@ export default function Payments({ companyId }: PaymentsProps) {
   useEffect(() => {
     async function load() {
       setLoading(true);
-      let query = supabase
+      let query = db
         .from('payment_records')
         .select('*, invoice:invoices(*, client:clients(name))')
         .order('payment_date', { ascending: false });

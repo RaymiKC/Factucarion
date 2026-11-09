@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from './supabase';
-import type { Client, Invoice, ProductService, TaxRate, Notification, Setting, FeatureFlag, UserConfig, EmailSchedule, EmailLog, PaymentRecord, EcfProviderConfig, NcfSequence, NcfVoidLog, CompanyUser } from './supabase';
+import { db } from './db';
+import type { Client, Invoice, ProductService, TaxRate, Notification, Setting, FeatureFlag, UserConfig, EmailSchedule, EmailLog, PaymentRecord, EcfProviderConfig, NcfSequence, NcfVoidLog, CompanyUser } from './types';
 
 // All hooks accept a companyId. When provided they filter to that company.
 // Callers typically pass useCompany().currentCompany?.id.
@@ -11,7 +11,7 @@ export function useClients(companyId?: string) {
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    let q = supabase.from('clients').select('*').order('name');
+    let q = db.from('clients').select('*').order('name');
     if (companyId) q = q.eq('company_id', companyId);
     const { data } = await q;
     setClients(data ?? []);
@@ -28,7 +28,7 @@ export function useInvoices(companyId?: string) {
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    let q = supabase
+    let q = db
       .from('invoices')
       .select('*, client:clients(*)')
       .order('created_at', { ascending: false });
@@ -48,7 +48,7 @@ export function useProducts(companyId?: string) {
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    let q = supabase.from('products_services').select('*, tax_rate:tax_rates(*)').order('name');
+    let q = db.from('products_services').select('*, tax_rate:tax_rates(*)').order('name');
     if (companyId) q = q.eq('company_id', companyId);
     const { data } = await q;
     setProducts(data ?? []);
@@ -62,7 +62,7 @@ export function useProducts(companyId?: string) {
 export function useTaxRates(companyId?: string) {
   const [taxRates, setTaxRates] = useState<TaxRate[]>([]);
   const fetch = useCallback(async () => {
-    let q = supabase.from('tax_rates').select('*').eq('is_active', true).order('name');
+    let q = db.from('tax_rates').select('*').eq('is_active', true).order('name');
     if (companyId) q = q.eq('company_id', companyId);
     const { data } = await q;
     setTaxRates(data ?? []);
@@ -76,21 +76,21 @@ export function useNotifications() {
   const [unreadCount, setUnreadCount] = useState(0);
 
   const fetch = useCallback(async () => {
-    const { data } = await supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(50);
+    const { data } = await db.from('notifications').select('*').order('created_at', { ascending: false }).limit(50);
     const list = data ?? [];
     setNotifications(list);
-    setUnreadCount(list.filter(n => !n.is_read).length);
+    setUnreadCount(list.filter((n: Notification) => !n.is_read).length);
   }, []);
 
   useEffect(() => { fetch(); }, [fetch]);
 
   const markRead = useCallback(async (id: string) => {
-    await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+    await db.from('notifications').update({ is_read: true }).eq('id', id);
     fetch();
   }, [fetch]);
 
   const markAllRead = useCallback(async () => {
-    await supabase.from('notifications').update({ is_read: true }).eq('is_read', false);
+    await db.from('notifications').update({ is_read: true }).eq('is_read', false);
     fetch();
   }, [fetch]);
 
@@ -103,7 +103,7 @@ export function useSettings(companyId?: string) {
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    let q = supabase.from('settings').select('*').order('category');
+    let q = db.from('settings').select('*').order('category');
     if (companyId) q = q.eq('company_id', companyId);
     const { data } = await q;
     setSettings(data ?? []);
@@ -116,12 +116,12 @@ export function useSettings(companyId?: string) {
 
   const updateSetting = async (key: string, value: string) => {
     if (companyId) {
-      await supabase.from('settings')
+      await db.from('settings')
         .update({ value, updated_at: new Date().toISOString() })
         .eq('company_id', companyId)
         .eq('key', key);
     } else {
-      await supabase.from('settings')
+      await db.from('settings')
         .update({ value, updated_at: new Date().toISOString() })
         .eq('key', key);
     }
@@ -135,7 +135,7 @@ export function useFeatureFlags(companyId?: string) {
   const [flags, setFlags] = useState<FeatureFlag[]>([]);
 
   const fetch = useCallback(async () => {
-    let q = supabase.from('feature_flags').select('*').order('name');
+    let q = db.from('feature_flags').select('*').order('name');
     if (companyId) q = q.eq('company_id', companyId);
     const { data } = await q;
     setFlags(data ?? []);
@@ -144,7 +144,7 @@ export function useFeatureFlags(companyId?: string) {
   useEffect(() => { fetch(); }, [fetch]);
 
   const toggle = async (id: string, enabled: boolean) => {
-    await supabase.from('feature_flags').update({ is_enabled: enabled, updated_at: new Date().toISOString() }).eq('id', id);
+    await db.from('feature_flags').update({ is_enabled: enabled, updated_at: new Date().toISOString() }).eq('id', id);
     fetch();
   };
 
@@ -159,7 +159,7 @@ export function useUsersConfig(companyId?: string) {
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    let q = supabase.from('users_config').select('*').order('name');
+    let q = db.from('users_config').select('*').order('name');
     if (companyId) q = q.eq('company_id', companyId);
     const { data } = await q;
     setUsers(data ?? []);
@@ -176,7 +176,7 @@ export function useEmailSchedules(companyId?: string) {
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    let q = supabase.from('email_schedules').select('*').order('name');
+    let q = db.from('email_schedules').select('*').order('name');
     if (companyId) q = q.eq('company_id', companyId);
     const { data } = await q;
     setSchedules(data ?? []);
@@ -193,7 +193,7 @@ export function useEmailLog() {
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from('email_log').select('*').order('sent_at', { ascending: false }).limit(100);
+    const { data } = await db.from('email_log').select('*').order('sent_at', { ascending: false }).limit(100);
     setLogs(data ?? []);
     setLoading(false);
   }, []);
@@ -206,7 +206,7 @@ export function usePaymentRecords(invoiceId?: string) {
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
 
   const fetch = useCallback(async () => {
-    let q = supabase.from('payment_records').select('*').order('payment_date', { ascending: false });
+    let q = db.from('payment_records').select('*').order('payment_date', { ascending: false });
     if (invoiceId) q = q.eq('invoice_id', invoiceId);
     const { data } = await q;
     setPayments(data ?? []);
@@ -222,7 +222,7 @@ export function useEcfProviderConfig(companyId?: string) {
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    let q = supabase.from('ecf_provider_config').select('*');
+    let q = db.from('ecf_provider_config').select('*');
     if (companyId) {
       q = q.eq('company_id', companyId);
     } else {
@@ -237,7 +237,7 @@ export function useEcfProviderConfig(companyId?: string) {
 
   const save = useCallback(async (updates: Partial<Omit<EcfProviderConfig, 'id'>>) => {
     if (config?.id) {
-      await supabase
+      await db
         .from('ecf_provider_config')
         .update({ ...updates, updated_at: new Date().toISOString() })
         .eq('id', config.id);
@@ -266,8 +266,8 @@ export function useDashboardMetrics(companyId?: string) {
   useEffect(() => {
     async function load() {
       setLoading(true);
-      let invQ = supabase.from('invoices').select('*, client:clients(name)');
-      let cliQ = supabase.from('clients').select('id').eq('is_active', true);
+      let invQ = db.from('invoices').select('*, client:clients(name)');
+      let cliQ = db.from('clients').select('id').eq('is_active', true);
       if (companyId) {
         invQ = invQ.eq('company_id', companyId);
         cliQ = cliQ.eq('company_id', companyId);
@@ -321,7 +321,7 @@ export function useNcfSequences(companyId?: string) {
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    let q = supabase.from('ncf_sequences').select('*').order('created_at', { ascending: false });
+    let q = db.from('ncf_sequences').select('*').order('created_at', { ascending: false });
     if (companyId) q = q.eq('company_id', companyId);
     const { data } = await q;
     setSequences(data ?? []);
@@ -339,7 +339,7 @@ export function useNcfVoidLog(companyId?: string) {
   const fetch = useCallback(async () => {
     setLoading(true);
     // ncf_void_log doesn't have company_id directly; filter via invoice join if needed
-    const { data } = await supabase.from('ncf_void_log').select('*').order('cancelled_at', { ascending: false });
+    const { data } = await db.from('ncf_void_log').select('*').order('cancelled_at', { ascending: false });
     setLogs(data ?? []);
     setLoading(false);
   }, [companyId]);
@@ -352,7 +352,7 @@ export function useActiveNcfSequence(ncfType: string, companyId?: string) {
   const [sequence, setSequence] = useState<NcfSequence | null>(null);
 
   const fetch = useCallback(async () => {
-    let q = supabase
+    let q = db
       .from('ncf_sequences')
       .select('*')
       .eq('ncf_type', ncfType)
@@ -373,7 +373,7 @@ export function useCompanyUsers(companyId?: string, userId?: string) {
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    let q = supabase.from('company_users').select('*');
+    let q = db.from('company_users').select('*');
     if (companyId) q = q.eq('company_id', companyId);
     if (userId)    q = q.eq('user_id', userId);
     const { data } = await q;
@@ -384,7 +384,7 @@ export function useCompanyUsers(companyId?: string, userId?: string) {
   useEffect(() => { fetch(); }, [fetch]);
 
   const assign = useCallback(async (uid: string, cid: string, roleOverride?: string) => {
-    await supabase.from('company_users').upsert({
+    await db.from('company_users').upsert({
       user_id: uid,
       company_id: cid,
       role_override: roleOverride ?? null,
@@ -393,7 +393,7 @@ export function useCompanyUsers(companyId?: string, userId?: string) {
   }, [fetch]);
 
   const unassign = useCallback(async (uid: string, cid: string) => {
-    await supabase.from('company_users').delete().eq('user_id', uid).eq('company_id', cid);
+    await db.from('company_users').delete().eq('user_id', uid).eq('company_id', cid);
     fetch();
   }, [fetch]);
 

@@ -1,7 +1,9 @@
 import { Injectable, signal } from '@angular/core';
-import { SupabaseClient } from '@supabase/supabase-js';
-import { SupabaseService, Client, Invoice, ProductService, TaxRate, Notification, Setting, FeatureFlag, UserConfig, EmailSchedule, EmailLog, PaymentRecord, NcfSequence } from './supabase.service';
 import { DbService } from './db.service';
+import {
+  Client, Invoice, ProductService, TaxRate, Notification, Setting,
+  FeatureFlag, UserConfig, EmailSchedule, EmailLog, PaymentRecord, NcfSequence,
+} from './models';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -20,9 +22,9 @@ export class DataService {
   paymentRecords = signal<PaymentRecord[]>([]);
   ncfSequences = signal<NcfSequence[]>([]);
 
-  constructor(private supabase: SupabaseService, private dbSvc: DbService) {}
+  constructor(private dbSvc: DbService) {}
 
-  get db(): SupabaseClient { return this.supabase.client; }
+  get db() { return this.dbSvc.client; }
 
   async loadAll(companyId?: string) {
     await Promise.all([
@@ -34,157 +36,71 @@ export class DataService {
   }
 
   async loadClients(companyId?: string) {
-    if (!this.dbSvc.isSupabase()) {
-      const filters: Record<string, unknown> = {};
-      if (companyId) filters['company_id'] = companyId;
-      const { data } = await this.dbSvc.proxyQuery<Client>('clients', { order: 'name', filters });
-      this.clients.set(data ?? []);
-      return;
-    }
     const q: any = this.db.from('clients').select('*').order('name');
     const { data } = companyId ? await q.eq('company_id', companyId) : await q;
     this.clients.set(data ?? []);
   }
 
   async loadInvoices(companyId?: string) {
-    if (!this.dbSvc.isSupabase()) {
-      const filters: Record<string, unknown> = {};
-      if (companyId) filters['company_id'] = companyId;
-      const { data } = await this.dbSvc.proxyQuery<Invoice>('invoices', {
-        select: '*, client:clients(name,email,rnc,cedula,client_type)',
-        order: 'created_at desc',
-        filters,
-      });
-      this.invoices.set(data ?? []);
-      return;
-    }
-    const q: any = this.db.from('invoices').select('*, client:clients(name,email,rnc,cedula,client_type)').order('created_at', { ascending: false });
+    const q: any = this.db
+      .from('invoices')
+      .select('*, client:clients(name,email,rnc,cedula,client_type)')
+      .order('created_at', { ascending: false });
     const { data } = companyId ? await q.eq('company_id', companyId) : await q;
     this.invoices.set(data ?? []);
   }
 
   async loadProducts() {
-    if (!this.dbSvc.isSupabase()) {
-      const { data } = await this.dbSvc.proxyQuery<ProductService>('products_services', {
-        select: '*, tax_rate:tax_rates(*)',
-        order: 'name',
-      });
-      this.products.set(data ?? []);
-      return;
-    }
     const { data } = await this.db.from('products_services').select('*, tax_rate:tax_rates(*)').order('name');
     this.products.set(data ?? []);
   }
 
   async loadTaxRates() {
-    if (!this.dbSvc.isSupabase()) {
-      const { data } = await this.dbSvc.proxyQuery<TaxRate>('tax_rates', {
-        filters: { is_active: true },
-        order: 'name',
-      });
-      this.taxRates.set(data ?? []);
-      return;
-    }
-    const { data } = await this.db.from('tax_rates').select('*').eq('is_active', true).order('name');
+    const { data } = await this.db.from('tax_rates').select('*').order('name');
     this.taxRates.set(data ?? []);
   }
 
   async loadNotifications() {
-    if (!this.dbSvc.isSupabase()) {
-      const { data } = await this.dbSvc.proxyQuery<Notification>('notifications', {
-        order: 'created_at desc',
-        limit: 50,
-      });
-      this.notifications.set(data ?? []);
-      return;
-    }
     const { data } = await this.db.from('notifications').select('*').order('created_at', { ascending: false }).limit(50);
     this.notifications.set(data ?? []);
   }
 
   async loadSettings(companyId?: string) {
-    if (!this.dbSvc.isSupabase()) {
-      const filters: Record<string, unknown> = { is_active: true };
-      if (companyId) filters['company_id'] = companyId;
-      const { data } = await this.dbSvc.proxyQuery<Setting>('settings', { filters });
-      this.settings.set(data ?? []);
-      return;
-    }
-    const q: any = this.db.from('settings').select('*').eq('is_active', true);
+    const q: any = this.db.from('settings').select('*').eq('is_active', true).order('key');
     const { data } = companyId ? await q.eq('company_id', companyId) : await q;
     this.settings.set(data ?? []);
   }
 
-  async loadFeatureFlags() {
-    if (!this.dbSvc.isSupabase()) {
-      const { data } = await this.dbSvc.proxyQuery<FeatureFlag>('feature_flags', { order: 'name' });
-      this.featureFlags.set(data ?? []);
-      return;
-    }
-    const { data } = await this.db.from('feature_flags').select('*').order('name');
+  async loadFeatureFlags(companyId?: string) {
+    const q: any = this.db.from('feature_flags').select('*').order('name');
+    const { data } = companyId ? await q.eq('company_id', companyId) : await q;
     this.featureFlags.set(data ?? []);
   }
 
-  async loadUsersConfig() {
-    if (!this.dbSvc.isSupabase()) {
-      const { data } = await this.dbSvc.proxyQuery<UserConfig>('users_config', { order: 'name' });
-      this.usersConfig.set(data ?? []);
-      return;
-    }
-    const { data } = await this.db.from('users_config').select('*').order('name');
+  async loadUsersConfig(companyId?: string) {
+    const q: any = this.db.from('users_config').select('*').order('name');
+    const { data } = companyId ? await q.eq('company_id', companyId) : await q;
     this.usersConfig.set(data ?? []);
   }
 
-  async loadEmailSchedules() {
-    if (!this.dbSvc.isSupabase()) {
-      const { data } = await this.dbSvc.proxyQuery<EmailSchedule>('email_schedules', { order: 'name' });
-      this.emailSchedules.set(data ?? []);
-      return;
-    }
-    const { data } = await this.db.from('email_schedules').select('*').order('name');
+  async loadEmailSchedules(companyId?: string) {
+    const q: any = this.db.from('email_schedules').select('*').order('name');
+    const { data } = companyId ? await q.eq('company_id', companyId) : await q;
     this.emailSchedules.set(data ?? []);
   }
 
   async loadEmailLog() {
-    if (!this.dbSvc.isSupabase()) {
-      const { data } = await this.dbSvc.proxyQuery<EmailLog>('email_log', {
-        order: 'sent_at desc',
-        limit: 100,
-      });
-      this.emailLog.set(data ?? []);
-      return;
-    }
     const { data } = await this.db.from('email_log').select('*').order('sent_at', { ascending: false }).limit(100);
     this.emailLog.set(data ?? []);
   }
 
   async loadPaymentRecords(companyId?: string) {
-    if (!this.dbSvc.isSupabase()) {
-      const filters: Record<string, unknown> = {};
-      if (companyId) filters['company_id'] = companyId;
-      const { data } = await this.dbSvc.proxyQuery<PaymentRecord>('payment_records', {
-        order: 'payment_date desc',
-        filters,
-      });
-      this.paymentRecords.set(data ?? []);
-      return;
-    }
     const q: any = this.db.from('payment_records').select('*').order('payment_date', { ascending: false });
     const { data } = companyId ? await q.eq('company_id', companyId) : await q;
     this.paymentRecords.set(data ?? []);
   }
 
   async loadNcfSequences(companyId?: string) {
-    if (!this.dbSvc.isSupabase()) {
-      const filters: Record<string, unknown> = {};
-      if (companyId) filters['company_id'] = companyId;
-      const { data } = await this.dbSvc.proxyQuery<NcfSequence>('ncf_sequences', {
-        order: 'ncf_type',
-        filters,
-      });
-      this.ncfSequences.set(data ?? []);
-      return;
-    }
     const q: any = this.db.from('ncf_sequences').select('*').order('ncf_type');
     const { data } = companyId ? await q.eq('company_id', companyId) : await q;
     this.ncfSequences.set(data ?? []);

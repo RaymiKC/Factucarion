@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { supabase } from './supabase';
+import { db } from './db';
 
 export interface Company {
   id: string;
@@ -43,7 +43,7 @@ export function CompanyProvider({ children, userRole, assignedCompanyIds = [] }:
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
+    const { data } = await db
       .from('companies')
       .select('*')
       .eq('is_active', true)
@@ -77,7 +77,7 @@ export function CompanyProvider({ children, userRole, assignedCompanyIds = [] }:
   }, []);
 
   const createCompany = useCallback(async (data: Partial<Company>): Promise<Company | null> => {
-    const { data: created } = await supabase
+    const { data: created } = await db
       .from('companies')
       .insert({
         name: data.name ?? '',

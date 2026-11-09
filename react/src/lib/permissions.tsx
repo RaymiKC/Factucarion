@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { supabase } from './supabase';
+import { db } from './db';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PAGE REGISTRY
@@ -144,21 +144,21 @@ export function PermissionsProvider({ children, userRole, isAdmin, userId }: Per
 
   const fetchAll = useCallback(async () => {
     setLoadingAll(true);
-    const { data } = await supabase.from('role_permissions').select('*').order('role').order('page');
+    const { data } = await db.from('role_permissions').select('*').order('role').order('page');
     setAllPermissions((data ?? []) as RolePermission[]);
     setLoadingAll(false);
   }, []);
 
   const fetchUserPerms = useCallback(async () => {
     setLoadingUserPerms(true);
-    const { data } = await supabase.from('user_permissions').select('*').order('user_id').order('page');
+    const { data } = await db.from('user_permissions').select('*').order('user_id').order('page');
     setAllUserPermissions((data ?? []) as UserPermission[]);
     setLoadingUserPerms(false);
   }, []);
 
   const fetchRoles = useCallback(async () => {
     setRolesLoading(true);
-    const { data } = await supabase
+    const { data } = await db
       .from('custom_roles')
       .select('*')
       .order('is_system', { ascending: false })
@@ -174,7 +174,7 @@ export function PermissionsProvider({ children, userRole, isAdmin, userId }: Per
   const updatePermission = useCallback(async (
     role: string, page: AppPage, field: keyof PagePermission, value: boolean,
   ) => {
-    await supabase
+    await db
       .from('role_permissions')
       .update({ [field]: value, updated_at: new Date().toISOString() })
       .eq('role', role)
@@ -190,12 +190,12 @@ export function PermissionsProvider({ children, userRole, isAdmin, userId }: Per
     uid: string, page: AppPage, field: keyof PagePermission, value: boolean,
   ) => {
     // Upsert the row so it always exists
-    await supabase.from('user_permissions').upsert(
+    await db.from('user_permissions').upsert(
       { user_id: uid, page, can_view: false, can_create: false, can_edit: false, can_delete: false, [field]: value, updated_at: new Date().toISOString() },
       { onConflict: 'user_id,page', ignoreDuplicates: false }
     );
     // Then update just the field in case row already existed
-    await supabase.from('user_permissions')
+    await db.from('user_permissions')
       .update({ [field]: value, updated_at: new Date().toISOString() })
       .eq('user_id', uid)
       .eq('page', page);
@@ -217,7 +217,7 @@ export function PermissionsProvider({ children, userRole, isAdmin, userId }: Per
       updated_at: new Date().toISOString(),
     }));
 
-    await supabase.from('user_permissions')
+    await db.from('user_permissions')
       .upsert(rows, { onConflict: 'user_id,page' });
 
     fetchUserPerms();
@@ -225,7 +225,7 @@ export function PermissionsProvider({ children, userRole, isAdmin, userId }: Per
 
   // Remove all user-level overrides (revert to role defaults)
   const resetUserPermissions = useCallback(async (uid: string) => {
-    await supabase.from('user_permissions').delete().eq('user_id', uid);
+    await db.from('user_permissions').delete().eq('user_id', uid);
     fetchUserPerms();
   }, [fetchUserPerms]);
 
@@ -238,7 +238,7 @@ export function PermissionsProvider({ children, userRole, isAdmin, userId }: Per
     const exists = customRoles.some(r => r.name === slug);
     if (exists) return { error: 'Ya existe un rol con ese nombre' };
 
-    const { error } = await supabase.from('custom_roles').insert({
+    const { error } = await db.from('custom_roles').insert({
       name: slug,
       label: data.label,
       description: data.description,
@@ -252,7 +252,7 @@ export function PermissionsProvider({ children, userRole, isAdmin, userId }: Per
       role: slug, page,
       can_view: false, can_create: false, can_edit: false, can_delete: false,
     }));
-    await supabase.from('role_permissions').insert(rows);
+    await db.from('role_permissions').insert(rows);
 
     await fetchRoles();
     await fetchAll();
@@ -262,7 +262,7 @@ export function PermissionsProvider({ children, userRole, isAdmin, userId }: Per
   const updateRole = useCallback(async (
     id: string, data: Partial<Pick<CustomRole, 'label' | 'description' | 'color'>>,
   ) => {
-    await supabase
+    await db
       .from('custom_roles')
       .update({ ...data, updated_at: new Date().toISOString() })
       .eq('id', id);
@@ -273,8 +273,8 @@ export function PermissionsProvider({ children, userRole, isAdmin, userId }: Per
     const role = customRoles.find(r => r.id === id);
     if (role?.is_system) return { error: 'No se pueden eliminar roles del sistema' };
 
-    await supabase.from('role_permissions').delete().eq('role', name);
-    const { error } = await supabase.from('custom_roles').delete().eq('id', id);
+    await db.from('role_permissions').delete().eq('role', name);
+    const { error } = await db.from('custom_roles').delete().eq('id', id);
     if (error) return { error: error.message };
 
     await fetchRoles();
@@ -287,7 +287,7 @@ export function PermissionsProvider({ children, userRole, isAdmin, userId }: Per
     if (!source.length) return;
 
     for (const perm of source) {
-      await supabase
+      await db
         .from('role_permissions')
         .update({
           can_view: perm.can_view,

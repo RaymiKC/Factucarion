@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Plus, Search, CreditCard as Edit2, Trash2, Building2, User, Phone, Mail, X } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/db';
 import { useClients } from '../lib/hooks';
-import type { Client } from '../lib/supabase';
+import type { Client } from '../lib/types';
 import Modal from '../components/Modal';
 import { useI18n } from '../lib/i18n';
 import { usePermissions } from '../lib/permissions';
@@ -58,9 +58,9 @@ export default function Clients({ companyId }: ClientsProps) {
     if (!form.name.trim()) return;
     setSaving(true);
     if (editing) {
-      await supabase.from('clients').update({ ...form, updated_at: new Date().toISOString() }).eq('id', editing.id);
+      await db.from('clients').update({ ...form, updated_at: new Date().toISOString() }).eq('id', editing.id);
     } else {
-      await supabase.from('clients').insert({ ...form, ...(companyId ? { company_id: companyId } : {}) });
+      await db.from('clients').insert({ ...form, ...(companyId ? { company_id: companyId } : {}) });
     }
     setSaving(false);
     setShowModal(false);
@@ -68,13 +68,13 @@ export default function Clients({ companyId }: ClientsProps) {
   }
 
   async function handleDelete(id: string) {
-    await supabase.from('clients').update({ is_active: false }).eq('id', id);
+    await db.from('clients').update({ is_active: false }).eq('id', id);
     setDeleteId(null);
     refetch();
   }
 
   async function toggleActive(client: Client) {
-    await supabase.from('clients').update({ is_active: !client.is_active }).eq('id', client.id);
+    await db.from('clients').update({ is_active: !client.is_active }).eq('id', client.id);
     refetch();
   }
 

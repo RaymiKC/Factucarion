@@ -6,7 +6,7 @@ import { DataService } from '../../services/data.service';
 import { PermissionsService } from '../../services/permissions.service';
 import { CompanyService } from '../../services/company.service';
 import { ModalComponent } from '../../components/modal.component';
-import { Client } from '../../services/supabase.service';
+import { Client } from '../../services/models';
 
 @Component({
   selector: 'app-clients',

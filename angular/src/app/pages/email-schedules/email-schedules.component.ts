@@ -5,7 +5,7 @@ import { I18nService } from '../../services/i18n.service';
 import { DataService } from '../../services/data.service';
 import { PermissionsService } from '../../services/permissions.service';
 import { ModalComponent } from '../../components/modal.component';
-import { EmailSchedule } from '../../services/supabase.service';
+import { EmailSchedule } from '../../services/models';
 
 @Component({
   selector: 'app-email-schedules',

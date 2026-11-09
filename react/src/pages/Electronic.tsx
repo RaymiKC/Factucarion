@@ -6,7 +6,7 @@ import {
   ChevronDown, ChevronUp, Save, Activity, ShieldCheck, ExternalLink,
 } from 'lucide-react';
 import { useFeatureFlags, useEcfProviderConfig } from '../lib/hooks';
-import type { EcfProviderConfig } from '../lib/supabase';
+import type { EcfProviderConfig } from '../lib/types';
 
 function FieldRow({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (

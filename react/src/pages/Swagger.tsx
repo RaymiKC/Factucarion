@@ -1,9 +1,7 @@
 import { useEffect, useRef } from 'react';
+import { API_BASE, getAuthToken } from '../lib/db';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-const API_BASE = `${SUPABASE_URL}/functions/v1/api`;
-const SPEC_URL = `${API_BASE}/spec`;
+const SPEC_URL = `${API_BASE}/openapi.json`;
 
 export default function Swagger() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -35,8 +33,8 @@ export default function Swagger() {
         layout: 'BaseLayout',
         deepLinking: true,
         requestInterceptor: (request: { headers: Record<string, string> }) => {
-          request.headers['Authorization'] = `Bearer ${ANON_KEY}`;
-          request.headers['Apikey'] = ANON_KEY;
+          const token = getAuthToken();
+          if (token) request.headers['Authorization'] = `Bearer ${token}`;
           return request;
         },
         onComplete: () => {
@@ -59,7 +57,7 @@ export default function Swagger() {
           <div>
             <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-100">API Documentation</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-              Interactive REST API explorer — all requests use your Supabase anon key automatically.
+              Interactive REST API explorer — requests carry your current session token automatically.
             </p>
           </div>
           <div className="flex items-center gap-3">

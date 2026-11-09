@@ -1,6 +1,6 @@
 import { Bell, CheckCheck, FileText, DollarSign, AlertTriangle, Zap, Info, Clock } from 'lucide-react';
 import { useNotifications } from '../lib/hooks';
-import type { Notification } from '../lib/supabase';
+import type { Notification } from '../lib/types';
 import { formatDateTime } from '../lib/utils';
 import { useI18n } from '../lib/i18n';
 

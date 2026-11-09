@@ -1,14 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Settings, Users, Zap, Mail, Save, Plus, CreditCard as Edit2, Trash2, ToggleLeft, ToggleRight, Building2, DollarSign, Percent, RefreshCw, Landmark, Database, Shield, CheckCircle, Globe, Lock, Eye, PenLine, FilePlus, Copy, ChevronDown, ChevronRight as ChevronRightIcon, X, Tag, Upload, Image as ImageIcon, Palette, AlertTriangle, Key, Smartphone, RotateCcw, Check } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/db';
 import { useSettings, useFeatureFlags, useUsersConfig, useTaxRates, useCompanyUsers } from '../lib/hooks';
 import { useCompany, type Company } from '../lib/company';
 import { usePermissions, PAGE_REGISTRY, type AppPage, type PagePermission, type RolePermission, type CustomRole, type UserPermission } from '../lib/permissions';
-import type { UserConfig, TaxRate } from '../lib/supabase';
+import type { UserConfig, TaxRate } from '../lib/types';
 import Modal from '../components/Modal';
-import { DB_PROVIDER } from '../lib/db';
+import { API_BASE } from '../lib/db';
 import { useI18n, REGIONS, type Language, type Region } from '../lib/i18n';
-import { generateTempPassword, hashPassword, sendWelcomeEmail } from '../lib/auth';
+import { generateTempPassword, sendWelcomeEmail } from '../lib/auth';
 
 type AdminTab = 'companies' | 'company' | 'invoices' | 'banking' | 'users' | 'permissions' | 'features' | 'taxes' | 'email' | 'region' | 'database';
 
@@ -650,6 +650,19 @@ interface AdminProps { companyId?: string }
 
 export default function Admin({ companyId }: AdminProps = {}) {
   const [activeTab, setActiveTab] = useState<AdminTab>('company');
+  const [apiStatus, setApiStatus] = useState<{
+    database?: { ok?: boolean; provider?: string; target?: string; tables?: number };
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API_BASE}/health`)
+      .then(response => response.json())
+      .then(payload => { if (!cancelled) setApiStatus(payload); })
+      .catch(() => { if (!cancelled) setApiStatus(null); });
+    return () => { cancelled = true; };
+  }, []);
+
   const { t, lang, region, setLang, setRegion, regionConfig } = useI18n();
   const { settings, getSetting, updateSetting, loading: settingsLoading } = useSettings(companyId);
   const { flags, toggle, refetch: refetchFlags } = useFeatureFlags(companyId);
@@ -682,7 +695,7 @@ export default function Admin({ companyId }: AdminProps = {}) {
 
   async function saveCompany() {
     if (editingCompany) {
-      await supabase.from('companies').update({
+      await db.from('companies').update({
         name: companyForm.name,
         rnc: companyForm.rnc,
         address: companyForm.address,
@@ -710,9 +723,9 @@ export default function Admin({ companyId }: AdminProps = {}) {
     try {
       const ext = file.name.split('.').pop()?.toLowerCase() ?? 'png';
       const path = `logos/${companyId ?? 'default'}/logo.${ext}`;
-      const { error } = await supabase.storage.from('company-assets').upload(path, file, { upsert: true, contentType: file.type });
+      const { error } = await db.storage.from('company-assets').upload(path, file, { upsert: true, contentType: file.type });
       if (error) throw error;
-      const { data: urlData } = supabase.storage.from('company-assets').getPublicUrl(path);
+      const { data: urlData } = db.storage.from('company-assets').getPublicUrl(path);
       const url = urlData.publicUrl;
       setLogoPreview(url);
       await updateSetting('company_logo_url', url);
@@ -741,7 +754,7 @@ export default function Admin({ companyId }: AdminProps = {}) {
 
   async function saveUser() {
     if (editingUser) {
-      await supabase.from('users_config').update({
+      await db.from('users_config').update({
         name: userForm.name,
         email: userForm.email,
         role: userForm.role,
@@ -754,11 +767,10 @@ export default function Admin({ companyId }: AdminProps = {}) {
       }
     } else {
       const tempPass = generateTempPassword();
-      const hash = await hashPassword(tempPass);
-      const { data: newUser } = await supabase.from('users_config').insert({
+      const { data: newUser } = await db.from('users_config').insert({
         ...userForm,
+        // The API hashes temp_password with bcrypt before storing it.
         temp_password: tempPass,
-        password_hash: hash,
         must_change_password: true,
       }).select().single();
       if (newUser) {
@@ -775,31 +787,30 @@ export default function Admin({ companyId }: AdminProps = {}) {
   }
 
   async function toggleUser(user: UserConfig) {
-    await supabase.from('users_config').update({ is_active: !user.is_active }).eq('id', user.id);
+    await db.from('users_config').update({ is_active: !user.is_active }).eq('id', user.id);
     refetchUsers();
   }
 
   async function toggleUserOtp(user: UserConfig) {
-    await supabase.from('users_config').update({ otp_enabled: !user.otp_enabled }).eq('id', user.id);
+    await db.from('users_config').update({ otp_enabled: !user.otp_enabled }).eq('id', user.id);
     refetchUsers();
   }
 
   async function resetAllTables() {
     setResetTablesLoading(true);
     const tables = [
-      'invoice_items', 'invoices', 'payments', 'clients', 'products',
-      'expenses', 'ncf_sequences', 'recurring_invoices', 'email_schedules',
+      'invoice_items', 'invoices', 'payment_records', 'clients', 'products_services',
+      'expenses', 'ncf_sequences', 'email_schedules',
       'notifications', 'company_users', 'otp_tokens',
     ];
     for (const t of tables) {
-      await supabase.from(t).delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await db.from(t).delete().neq('id', '00000000-0000-0000-0000-000000000000');
     }
     // Delete non-admin users
-    await supabase.from('users_config').delete().neq('role', 'admin');
-    // Reset admin password
-    const hash = await hashPassword('admin');
-    await supabase.from('users_config').update({
-      password_hash: hash,
+    await db.from('users_config').delete().neq('role', 'admin');
+    // Reset admin password (the API hashes the supplied "password")
+    await db.from('users_config').update({
+      password: 'admin',
       failed_login_attempts: 0,
       locked_until: null,
       must_change_password: false,
@@ -807,9 +818,9 @@ export default function Admin({ companyId }: AdminProps = {}) {
       otp_enabled: false,
     }).eq('role', 'admin');
     // Reset settings
-    await supabase.from('app_settings').delete().neq('key', '__never__');
+    await db.from('settings').delete().neq('key', '__never__');
     // Reset feature flags to defaults
-    await supabase.from('feature_flags').update({ is_enabled: false }).neq('name', '__never__');
+    await db.from('feature_flags').update({ is_enabled: false }).neq('name', '__never__');
     setResetTablesLoading(false);
     setResetTablesModal(false);
     setResetConfirmText('');
@@ -818,22 +829,22 @@ export default function Admin({ companyId }: AdminProps = {}) {
   }
 
   async function deleteUser(id: string) {
-    await supabase.from('users_config').delete().eq('id', id);
+    await db.from('users_config').delete().eq('id', id);
     refetchUsers();
   }
 
   async function saveTax() {
     if (editingTax) {
-      await supabase.from('tax_rates').update(taxForm).eq('id', editingTax.id);
+      await db.from('tax_rates').update(taxForm).eq('id', editingTax.id);
     } else {
-      await supabase.from('tax_rates').insert({ ...taxForm, is_active: true });
+      await db.from('tax_rates').insert({ ...taxForm, is_active: true });
     }
     setTaxModal(false);
     refetchTaxes();
   }
 
   async function toggleTax(t: TaxRate) {
-    await supabase.from('tax_rates').update({ is_active: !t.is_active }).eq('id', t.id);
+    await db.from('tax_rates').update({ is_active: !t.is_active }).eq('id', t.id);
     refetchTaxes();
   }
 
@@ -1124,7 +1135,7 @@ export default function Admin({ companyId }: AdminProps = {}) {
             ))}
           </div>
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-            <p className="text-xs text-amber-700">Para envío real de emails, configura las credenciales SMTP y despliega la función Edge de Supabase para el envío.</p>
+            <p className="text-xs text-amber-700">Para envío real de emails, configura las credenciales SMTP en server/.env (SMTP_HOST, SMTP_USER, SMTP_PASSWORD) y reinicia la API.</p>
           </div>
           <div className="flex justify-end">
             <button onClick={saveSettings} disabled={!hasUnsavedChanges}
@@ -1375,14 +1386,13 @@ export default function Admin({ companyId }: AdminProps = {}) {
         <div className="space-y-4">
           <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
             <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2 mb-4"><Database size={16} />Proveedor de Base de Datos</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {(['supabase', 'postgres', 'sqlserver'] as const).map(p => {
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {(['postgres', 'sqlserver'] as const).map(p => {
                 const labels: Record<string, { name: string; desc: string }> = {
-                  supabase:  { name: 'Supabase',    desc: 'Base de datos en la nube (por defecto)' },
-                  postgres:  { name: 'PostgreSQL',  desc: 'Servidor PostgreSQL propio' },
-                  sqlserver: { name: 'SQL Server',  desc: 'Microsoft SQL Server' },
+                  postgres:  { name: 'PostgreSQL',           desc: 'Servidor PostgreSQL propio' },
+                  sqlserver: { name: 'Microsoft SQL Server', desc: 'Instancia local o remota de SQL Server' },
                 };
-                const active = DB_PROVIDER === p;
+                const active = apiStatus?.database?.provider === p;
                 return (
                   <div key={p} className={`p-4 border-2 rounded-xl cursor-default ${active ? 'border-sky-500 bg-sky-50' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900'}`}>
                     <div className="flex items-center justify-between mb-1">
@@ -1395,11 +1405,17 @@ export default function Admin({ companyId }: AdminProps = {}) {
               })}
             </div>
             <div className="mt-4 p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-400 space-y-1">
-              <p className="font-semibold text-slate-700 dark:text-slate-200">Para cambiar el proveedor:</p>
-              <p>1. Edita el archivo <code className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1 py-0.5 rounded font-mono">.env</code> en la raíz del proyecto.</p>
-              <p>2. Cambia <code className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1 py-0.5 rounded font-mono">VITE_DB_PROVIDER</code> a <code className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1 py-0.5 rounded font-mono">postgres</code> o <code className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1 py-0.5 rounded font-mono">sqlserver</code>.</p>
-              <p>3. Configura <code className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1 py-0.5 rounded font-mono">VITE_DB_API_BASE</code> con la URL del proxy.</p>
-              <p>4. Corre el proxy correspondiente desde la carpeta <code className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1 py-0.5 rounded font-mono">Scripts/</code>.</p>
+              <p className="font-semibold text-slate-700 dark:text-slate-200">Estado de la conexión</p>
+              <p>
+                API: <code className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1 py-0.5 rounded font-mono">{API_BASE}</code>
+                {' · '}
+                {apiStatus?.database?.ok ? 'conectada' : 'sin conexión'}
+              </p>
+              <p>Base de datos: <code className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1 py-0.5 rounded font-mono">{apiStatus?.database?.target ?? '—'}</code></p>
+              <p className="font-semibold text-slate-700 dark:text-slate-200 pt-2">Para cambiar el proveedor:</p>
+              <p>1. Edita <code className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1 py-0.5 rounded font-mono">server/.env</code>.</p>
+              <p>2. Cambia <code className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1 py-0.5 rounded font-mono">DB_PROVIDER</code> a <code className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1 py-0.5 rounded font-mono">postgres</code> o <code className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1 py-0.5 rounded font-mono">sqlserver</code> y configura la cadena de conexión.</p>
+              <p>3. Reinicia la API con <code className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1 py-0.5 rounded font-mono">npm run dev</code> en <code className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1 py-0.5 rounded font-mono">server/</code>.</p>
             </div>
           </div>
 
@@ -1407,16 +1423,14 @@ export default function Admin({ companyId }: AdminProps = {}) {
             <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Scripts disponibles</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               {[
-                { label: 'SQL Server – Esquema',         path: 'Scripts/SQL/01_create_schema.sql' },
-                { label: 'SQL Server – Datos iniciales', path: 'Scripts/SQL/02_seed_data.sql' },
-                { label: 'SQL Server – Procedimientos',  path: 'Scripts/SQL/03_stored_procedures.sql' },
-                { label: 'SQL Server – Vistas',          path: 'Scripts/SQL/04_views.sql' },
-                { label: 'SQL Server – Proxy API',       path: 'Scripts/SQL/05_api_proxy.js' },
-                { label: 'PostgreSQL – Esquema',         path: 'Scripts/Postgres/01_create_schema.sql' },
-                { label: 'PostgreSQL – Datos iniciales', path: 'Scripts/Postgres/02_seed_data.sql' },
-                { label: 'PostgreSQL – Funciones',       path: 'Scripts/Postgres/03_functions.sql' },
-                { label: 'PostgreSQL – Vistas',          path: 'Scripts/Postgres/04_views.sql' },
-                { label: 'PostgreSQL – Proxy API',       path: 'Scripts/Postgres/05_api_proxy.js' },
+                { label: 'PostgreSQL – Esquema',          path: 'database/postgres/01_create_schema.sql' },
+                { label: 'PostgreSQL – Datos iniciales',  path: 'database/postgres/02_seed_data.sql' },
+                { label: 'PostgreSQL – Funciones',        path: 'database/postgres/03_functions.sql' },
+                { label: 'PostgreSQL – Vistas',           path: 'database/postgres/04_views.sql' },
+                { label: 'SQL Server – Esquema',          path: 'database/sqlserver/01_create_schema.sql' },
+                { label: 'SQL Server – Datos iniciales',  path: 'database/sqlserver/02_seed_data.sql' },
+                { label: 'SQL Server – Procedimientos',   path: 'database/sqlserver/03_stored_procedures.sql' },
+                { label: 'SQL Server – Vistas',           path: 'database/sqlserver/04_views.sql' },
               ].map(({ label, path }) => (
                 <div key={path} className="flex items-center gap-2 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
                   <Database size={12} className="text-slate-400 dark:text-slate-500 shrink-0" />

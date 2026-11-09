@@ -1,6 +1,17 @@
-# Angular
+# FacturaPro — Angular app
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.26.
+Angular 20 replica of the React app. It shares the same database and API as `react/`.
+
+## Backend
+
+Start the API first ([`../server`](../server)); it connects to PostgreSQL or SQL Server.
+
+```powershell
+cd ../server
+npm run dev        # http://localhost:3001
+```
+
+The API base URL is configured in `src/environments/environment.ts` (`apiBase`).
 
 ## Development server
 

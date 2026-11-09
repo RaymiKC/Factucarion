@@ -5,7 +5,7 @@ import { I18nService } from '../../services/i18n.service';
 import { DataService } from '../../services/data.service';
 import { CompanyService } from '../../services/company.service';
 import { AuthService } from '../../services/auth.service';
-import { Invoice } from '../../services/supabase.service';
+import { Invoice } from '../../services/models';
 
 @Component({
   selector: 'app-monthly-report',

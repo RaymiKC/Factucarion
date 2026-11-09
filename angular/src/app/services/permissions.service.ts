@@ -1,10 +1,10 @@
 import { Injectable, signal, computed } from '@angular/core';
-import { SupabaseService } from './supabase.service';
+import { DbService } from './db.service';
 import { AuthService } from './auth.service';
 
 export interface PagePermission { view: boolean; create: boolean; edit: boolean; delete: boolean; }
-export interface RolePermission { id: string; role: string; page: string; can_view: boolean; can_create: boolean; can_edit: boolean; can_delete: boolean; company_id: string | null; }
-export interface UserPermission { id: string; user_config_id: string; page: string; can_view: boolean; can_create: boolean; can_edit: boolean; can_delete: boolean; company_id: string | null; }
+export interface RolePermission { id: string; role: string; page: string; can_view: boolean; can_create: boolean; can_edit: boolean; can_delete: boolean; }
+export interface UserPermission { id: string; user_id: string; page: string; can_view: boolean; can_create: boolean; can_edit: boolean; can_delete: boolean; }
 export interface CustomRole { id: string; name: string; description: string; created_at: string; }
 
 export const PAGE_LIST = ['dashboard','invoices','clients','products','payments','electronic','email_schedules','notifications','analytics','admin','monthly_report','swagger'];
@@ -23,18 +23,17 @@ export class PermissionsService {
     return PAGE_LIST.filter(p => this.canView(p));
   });
 
-  constructor(private supabase: SupabaseService, private auth: AuthService) {}
+  constructor(private db: DbService, private auth: AuthService) {}
 
   async load(userId: string, role: string) {
-    const db = this.supabase.client;
     const [rp, up, cr] = await Promise.all([
-      db.from('role_permissions').select('*').eq('role', role),
-      db.from('user_permissions').select('*').eq('user_config_id', userId),
-      db.from('custom_roles').select('*').order('name'),
+      this.db.from('role_permissions').select('*').eq('role', role),
+      this.db.from('user_permissions').select('*').eq('user_id', userId),
+      this.db.from('custom_roles').select('*').order('name'),
     ]);
-    this.rolePermissions.set(rp.data ?? []);
-    this.userPermissions.set(up.data ?? []);
-    this.customRoles.set(cr.data ?? []);
+    this.rolePermissions.set((rp.data ?? []) as RolePermission[]);
+    this.userPermissions.set((up.data ?? []) as UserPermission[]);
+    this.customRoles.set((cr.data ?? []) as CustomRole[]);
     this.loaded.set(true);
   }
 
@@ -54,26 +53,25 @@ export class PermissionsService {
   canEdit(page: string) { return this.getPerms(page).edit; }
   canDelete(page: string) { return this.getPerms(page).delete; }
 
-  async updatePermission(role: string, page: string, field: string, val: boolean, companyId?: string) {
-    const db = this.supabase.client;
+  async updatePermission(role: string, page: string, field: string, val: boolean) {
     const existing = this.rolePermissions().find(x => x.role === role && x.page === page);
     if (existing) {
-      await db.from('role_permissions').update({ [field]: val }).eq('id', existing.id);
+      await this.db.from('role_permissions').update({ [field]: val }).eq('id', existing.id);
       this.rolePermissions.set(this.rolePermissions().map(x => x.id === existing.id ? { ...x, [field]: val } : x));
     } else {
-      const row = { role, page, can_view: false, can_create: false, can_edit: false, can_delete: false, company_id: companyId ?? null, [field]: val };
-      const { data } = await db.from('role_permissions').insert(row).select().single();
-      if (data) this.rolePermissions.set([...this.rolePermissions(), data]);
+      const row = { role, page, can_view: false, can_create: false, can_edit: false, can_delete: false, [field]: val };
+      const { data } = await this.db.from('role_permissions').insert(row).select().single();
+      if (data) this.rolePermissions.set([...this.rolePermissions(), data as RolePermission]);
     }
   }
 
   async createRole(name: string, description: string) {
-    const { data } = await this.supabase.client.from('custom_roles').insert({ name, description }).select().single();
-    if (data) this.customRoles.set([...this.customRoles(), data]);
+    const { data } = await this.db.from('custom_roles').insert({ name, description }).select().single();
+    if (data) this.customRoles.set([...this.customRoles(), data as CustomRole]);
   }
 
   async deleteRole(id: string) {
-    await this.supabase.client.from('custom_roles').delete().eq('id', id);
+    await this.db.from('custom_roles').delete().eq('id', id);
     this.customRoles.set(this.customRoles().filter(r => r.id !== id));
   }
 }

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Plus, Search, CreditCard as Edit2, Trash2, Package, Wrench } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/db';
 import { useProducts, useTaxRates } from '../lib/hooks';
-import type { ProductService } from '../lib/supabase';
+import type { ProductService } from '../lib/types';
 import Modal from '../components/Modal';
 import { useI18n } from '../lib/i18n';
 import { usePermissions } from '../lib/permissions';
@@ -48,9 +48,9 @@ export default function Products({ companyId }: ProductsProps) {
     if (!form.name.trim()) return;
     setSaving(true);
     if (editing) {
-      await supabase.from('products_services').update({ ...form, updated_at: new Date().toISOString() }).eq('id', editing.id);
+      await db.from('products_services').update({ ...form, updated_at: new Date().toISOString() }).eq('id', editing.id);
     } else {
-      await supabase.from('products_services').insert({ ...form, ...(companyId ? { company_id: companyId } : {}) });
+      await db.from('products_services').insert({ ...form, ...(companyId ? { company_id: companyId } : {}) });
     }
     setSaving(false);
     setShowModal(false);
@@ -58,7 +58,7 @@ export default function Products({ companyId }: ProductsProps) {
   }
 
   async function toggleActive(p: ProductService) {
-    await supabase.from('products_services').update({ is_active: !p.is_active }).eq('id', p.id);
+    await db.from('products_services').update({ is_active: !p.is_active }).eq('id', p.id);
     refetch();
   }
 

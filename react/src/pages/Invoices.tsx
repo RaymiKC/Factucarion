@@ -4,12 +4,12 @@ import {
   RefreshCw, Repeat, Hash, AlertTriangle, CheckCircle, Clock, Zap,
   CheckCircle2, XCircle, Server, FileCheck, CreditCard as Edit2,
 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/db';
 import {
   useInvoices, useClients, useProducts, useTaxRates, useSettings,
   useNcfSequences, useNcfVoidLog, useFeatureFlags, useEcfProviderConfig,
 } from '../lib/hooks';
-import type { Invoice, InvoiceItem, Client, ProductService, NcfSequence } from '../lib/supabase';
+import type { Invoice, InvoiceItem, Client, ProductService, NcfSequence } from '../lib/types';
 import Modal from '../components/Modal';
 import StatusBadge from '../components/StatusBadge';
 import InvoiceTemplate from '../components/InvoiceTemplate';
@@ -34,7 +34,7 @@ interface LineItem {
 
 async function assignNcf(ncfType: string, companyId?: string): Promise<string> {
   const currentMonth = new Date().toISOString().substring(0, 7);
-  let voidQ = supabase
+  let voidQ = db
     .from('ncf_void_log')
     .select('id, ncf')
     .eq('ncf_type', ncfType)
@@ -47,7 +47,7 @@ async function assignNcf(ncfType: string, companyId?: string): Promise<string> {
   const { data: voidRow } = await voidQ.maybeSingle();
   if (voidRow) return voidRow.ncf;
 
-  let seqQ = supabase
+  let seqQ = db
     .from('ncf_sequences')
     .select('*')
     .eq('ncf_type', ncfType)
@@ -57,7 +57,7 @@ async function assignNcf(ncfType: string, companyId?: string): Promise<string> {
   if (!seq) return '';
 
   const ncf = `${seq.prefix}${String(seq.current_seq).padStart(3, '0')}`;
-  await supabase.from('ncf_sequences').update({
+  await db.from('ncf_sequences').update({
     current_seq: seq.current_seq + 1,
     updated_at: new Date().toISOString(),
   }).eq('id', seq.id);
@@ -65,7 +65,7 @@ async function assignNcf(ncfType: string, companyId?: string): Promise<string> {
 }
 
 async function markNcfVoidLog(invoice: Invoice, reuseAllowed: boolean) {
-  await supabase.from('ncf_void_log').insert({
+  await db.from('ncf_void_log').insert({
     invoice_id: invoice.id,
     invoice_number: invoice.invoice_number,
     ncf: invoice.ncf,
@@ -200,7 +200,7 @@ export default function Invoices({ companyId }: InvoicesProps = {}) {
     const invoiceNumber = generateInvoiceNumber(prefix, nextNum);
     const ncf           = await assignNcf(form.ncf_type, companyId);
 
-    const { data: inv } = await supabase.from('invoices').insert({
+    const { data: inv } = await db.from('invoices').insert({
       invoice_number: invoiceNumber, ncf, client_id: form.client_id, company_id: companyId,
       issue_date: form.issue_date, due_date: form.due_date || null,
       ncf_type: form.ncf_type, notes: form.notes, terms: form.terms,
@@ -222,17 +222,17 @@ export default function Invoices({ companyId }: InvoicesProps = {}) {
           discount_amount: c.disc, line_total: c.total, sort_order: idx,
         };
       });
-      await supabase.from('invoice_items').insert(items);
-      await supabase.from('settings').update({ value: String(nextNum + 1) }).eq('key', 'next_invoice_number');
+      await db.from('invoice_items').insert(items);
+      await db.from('settings').update({ value: String(nextNum + 1) }).eq('key', 'next_invoice_number');
       if (ncf) {
         const currentMonth = new Date().toISOString().substring(0, 7);
-        await supabase.from('ncf_void_log')
+        await db.from('ncf_void_log')
           .update({ reused_by_invoice_id: inv.id })
           .eq('ncf', ncf).eq('ncf_type', form.ncf_type)
           .eq('reuse_allowed', true).is('reused_by_invoice_id', null)
           .eq('issue_month', currentMonth);
       }
-      await supabase.from('notifications').insert({
+      await db.from('notifications').insert({
         type: 'system', title: 'Factura creada',
         message: `Factura ${invoiceNumber}${ncf ? ` (NCF: ${ncf})` : ''} creada por ${formatCurrency(totals.total)}`,
         invoice_id: inv.id,
@@ -244,7 +244,7 @@ export default function Invoices({ companyId }: InvoicesProps = {}) {
   }
 
   async function updateStatus(id: string, status: Invoice['status']) {
-    await supabase.from('invoices').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
+    await db.from('invoices').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
     refetch();
   }
 
@@ -252,9 +252,9 @@ export default function Invoices({ companyId }: InvoicesProps = {}) {
     const issueMonth   = inv.issue_date.substring(0, 7);
     const currentMonth = new Date().toISOString().substring(0, 7);
     const reuseAllowed = issueMonth === currentMonth;
-    await supabase.from('invoices').update({ status: 'cancelled', updated_at: new Date().toISOString() }).eq('id', inv.id);
+    await db.from('invoices').update({ status: 'cancelled', updated_at: new Date().toISOString() }).eq('id', inv.id);
     if (inv.ncf) await markNcfVoidLog(inv, reuseAllowed);
-    await supabase.from('notifications').insert({
+    await db.from('notifications').insert({
       type: 'system', title: t('invoice_cancelled'),
       message: `${t('invoice_cancelled')}: ${inv.invoice_number}${inv.ncf ? ` (${regionConfig.invoiceNumberLabel}: ${inv.ncf})` : ''}. ${reuseAllowed ? t('ncf_reusable') : t('ncf_lost')}.`,
       invoice_id: inv.id,
@@ -265,14 +265,14 @@ export default function Invoices({ companyId }: InvoicesProps = {}) {
 
   async function handlePayment() {
     if (!payModal) return;
-    await supabase.from('payment_records').insert({ invoice_id: payModal.id, ...payForm });
+    await db.from('payment_records').insert({ invoice_id: payModal.id, ...payForm });
     const newPaid   = payModal.amount_paid + payForm.amount;
     const newStatus = newPaid >= payModal.total ? 'paid' : 'partial';
-    await supabase.from('invoices').update({
+    await db.from('invoices').update({
       amount_paid: newPaid, status: newStatus,
       payment_date: newStatus === 'paid' ? payForm.payment_date : undefined,
     }).eq('id', payModal.id);
-    await supabase.from('notifications').insert({
+    await db.from('notifications').insert({
       type: 'payment_received', title: t('payment_received_notif'),
       message: `${formatCurrency(payForm.amount)} — ${payModal.invoice_number}`,
       invoice_id: payModal.id,
@@ -291,18 +291,18 @@ export default function Invoices({ companyId }: InvoicesProps = {}) {
       updated_at: new Date().toISOString(),
     };
     if (editingSeq) {
-      await supabase.from('ncf_sequences').update(payload).eq('id', editingSeq.id);
+      await db.from('ncf_sequences').update(payload).eq('id', editingSeq.id);
     } else {
-      await supabase.from('ncf_sequences').update({ is_active: false }).eq('ncf_type', seqForm.ncf_type).eq('is_active', true);
-      if (companyId) await supabase.from('ncf_sequences').insert({ ...payload, company_id: companyId });
-      else            await supabase.from('ncf_sequences').insert(payload);
+      await db.from('ncf_sequences').update({ is_active: false }).eq('ncf_type', seqForm.ncf_type).eq('is_active', true);
+      if (companyId) await db.from('ncf_sequences').insert({ ...payload, company_id: companyId });
+      else            await db.from('ncf_sequences').insert(payload);
     }
     setSeqModal(false);
     refetchSeq();
   }
 
   async function toggleSeqActive(seq: NcfSequence) {
-    await supabase.from('ncf_sequences').update({ is_active: !seq.is_active, updated_at: new Date().toISOString() }).eq('id', seq.id);
+    await db.from('ncf_sequences').update({ is_active: !seq.is_active, updated_at: new Date().toISOString() }).eq('id', seq.id);
     refetchSeq();
   }
 
@@ -342,7 +342,7 @@ export default function Invoices({ companyId }: InvoicesProps = {}) {
     }
 
     const generatedNcf = approved ? (electronicId || invoice.ncf) : invoice.ncf;
-    await supabase.from('invoices').update({
+    await db.from('invoices').update({
       electronic_status: approved ? 'approved' : 'rejected',
       electronic_id: approved ? (electronicId || generatedNcf) : '',
       electronic_response: {
@@ -353,7 +353,7 @@ export default function Invoices({ companyId }: InvoicesProps = {}) {
       ncf: generatedNcf,
     }).eq('id', invoice.id);
 
-    await supabase.from('notifications').insert({
+    await db.from('notifications').insert({
       type: 'electronic',
       title: approved ? 'e-CF Aprobado' : 'e-CF Rechazado',
       message: approved
@@ -1197,7 +1197,7 @@ function InvoiceDetail({ invoice }: { invoice: Invoice }) {
   const { t, formatCurrency, formatDate, regionConfig } = useI18n();
   const [items, setItems] = useState<InvoiceItem[]>([]);
   useEffect(() => {
-    supabase.from('invoice_items').select('*').eq('invoice_id', invoice.id).order('sort_order').then(({ data }) => setItems(data ?? []));
+    db.from('invoice_items').select('*').eq('invoice_id', invoice.id).order('sort_order').then(({ data }) => setItems(data ?? []));
   }, [invoice.id]);
 
   return (

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { supabase } from './supabase';
+import { db } from './db';
 
 export type AppTheme = 'light' | 'dark';
 
@@ -50,17 +50,17 @@ export function useTheme() {
   return ctx;
 }
 
-// Save user's theme preference to Supabase
+// Save user's theme preference to db
 export async function saveUserTheme(userId: string, theme: AppTheme) {
-  await supabase
+  await db
     .from('users_config')
     .update({ preferred_theme: theme })
     .eq('id', userId);
 }
 
-// Save user's language preference to Supabase
+// Save user's language preference to db
 export async function saveUserLanguage(userId: string, language: string, region: string) {
-  await supabase
+  await db
     .from('users_config')
     .update({ preferred_language: language, preferred_region: region })
     .eq('id', userId);

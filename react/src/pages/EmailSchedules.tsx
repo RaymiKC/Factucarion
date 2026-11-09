@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Plus, Mail, Clock, CreditCard as Edit2, Trash2, Play, Pause, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/db';
+import { mailApi } from '../lib/auth-api';
 import { useEmailSchedules, useEmailLog, useFeatureFlags } from '../lib/hooks';
-import type { EmailSchedule } from '../lib/supabase';
+import type { EmailSchedule } from '../lib/types';
 import Modal from '../components/Modal';
 import { formatDateTime } from '../lib/utils';
 import { useI18n } from '../lib/i18n';
@@ -61,9 +62,9 @@ export default function EmailSchedules({ companyId }: EmailSchedulesProps) {
     if (!form.name.trim() || !form.subject.trim()) return;
     setSaving(true);
     if (editing) {
-      await supabase.from('email_schedules').update({ ...form, updated_at: new Date().toISOString() }).eq('id', editing.id);
+      await db.from('email_schedules').update({ ...form, updated_at: new Date().toISOString() }).eq('id', editing.id);
     } else {
-      await supabase.from('email_schedules').insert({ ...form, ...(companyId ? { company_id: companyId } : {}) });
+      await db.from('email_schedules').insert({ ...form, ...(companyId ? { company_id: companyId } : {}) });
     }
     setSaving(false);
     setShowModal(false);
@@ -71,12 +72,12 @@ export default function EmailSchedules({ companyId }: EmailSchedulesProps) {
   }
 
   async function toggleActive(s: EmailSchedule) {
-    await supabase.from('email_schedules').update({ is_active: !s.is_active }).eq('id', s.id);
+    await db.from('email_schedules').update({ is_active: !s.is_active }).eq('id', s.id);
     refetch();
   }
 
   async function handleDelete(id: string) {
-    await supabase.from('email_schedules').delete().eq('id', id);
+    await db.from('email_schedules').delete().eq('id', id);
     refetch();
   }
 
@@ -84,30 +85,25 @@ export default function EmailSchedules({ companyId }: EmailSchedulesProps) {
     setSimulating(s.id);
     setSendResult(null);
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-      const res = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${anonKey}` },
-        body: JSON.stringify({
-          to: 'test@ejemplo.com',
-          subject: s.subject,
-          body: s.body_template,
-          variables: {
-            client_name: 'Cliente Demo',
-            invoice_number: 'FAC-000001',
-            total: '1,500.00',
-            due_date: new Date().toLocaleDateString('es-DO'),
-            company_name: 'Mi Empresa',
-            invoice_link: '#',
-          },
-          schedule_id: s.id,
-          ...(companyId ? { company_id: companyId } : {}),
-        }),
+      const { data: json, error } = await mailApi.send({
+        to: 'test@ejemplo.com',
+        subject: s.subject,
+        body: s.body_template,
+        variables: {
+          client_name: 'Cliente Demo',
+          invoice_number: 'FAC-000001',
+          total: '1,500.00',
+          due_date: new Date().toLocaleDateString('es-DO'),
+          company_name: 'Mi Empresa',
+          invoice_link: '#',
+        },
       });
-      const json = await res.json() as { success?: boolean; error?: string; detail?: string };
-      await supabase.from('email_schedules').update({ last_run: new Date().toISOString() }).eq('id', s.id);
-      setSendResult({ id: s.id, ok: !!json.success, msg: json.error ?? (json.success ? 'Enviado correctamente' : 'Error desconocido') });
+      await db.from('email_schedules').update({ last_run: new Date().toISOString() }).eq('id', s.id);
+      setSendResult({
+        id: s.id,
+        ok: Boolean(json?.sent),
+        msg: json?.reason ?? error?.message ?? (json?.sent ? 'Enviado correctamente' : 'Error desconocido'),
+      });
       refetch();
     } catch (e) {
       setSendResult({ id: s.id, ok: false, msg: e instanceof Error ? e.message : 'Error de red' });

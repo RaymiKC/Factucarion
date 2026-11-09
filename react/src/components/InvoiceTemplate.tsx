@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { Printer, X } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/db';
 import { useSettings } from '../lib/hooks';
-import type { Invoice, Client, InvoiceItem } from '../lib/supabase';
+import type { Invoice, Client, InvoiceItem } from '../lib/types';
 import { useI18n } from '../lib/i18n';
 
 type Theme = 'classic' | 'modern' | 'minimal' | 'bold';
@@ -78,7 +78,7 @@ export default function InvoiceTemplate({ invoice, onClose }: InvoiceTemplatePro
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    supabase.from('invoice_items').select('*').eq('invoice_id', invoice.id).order('sort_order')
+    db.from('invoice_items').select('*').eq('invoice_id', invoice.id).order('sort_order')
       .then(({ data }) => setItems(data ?? []));
   }, [invoice.id]);
 

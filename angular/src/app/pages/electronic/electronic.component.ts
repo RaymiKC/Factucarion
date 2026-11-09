@@ -2,7 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { I18nService } from '../../services/i18n.service';
-import { SupabaseService, EcfProviderConfig } from '../../services/supabase.service';
+import { DbService } from '../../services/db.service';
+import { EcfProviderConfig } from '../../services/models';
 
 @Component({
   selector: 'app-electronic',
@@ -51,10 +52,10 @@ export class ElectronicComponent implements OnInit {
   config: EcfProviderConfig | null = null;
   saving = false; testing = false; message = ''; messageOk = false;
 
-  constructor(public i18n: I18nService, private supabase: SupabaseService) {}
+  constructor(public i18n: I18nService, private db: DbService) {}
 
   async ngOnInit() {
-    const { data } = await this.supabase.client.from('ecf_provider_config').select('*').maybeSingle();
+    const { data } = await this.db.client.from('ecf_provider_config').select('*').maybeSingle();
     this.config = data;
     if (!this.config) {
       this.config = { id: '', mode: 'third_party', own_service_url: '', own_service_token: '', own_service_environment: 'sandbox', third_party_provider: '', third_party_api_key: '', webhook_url: '', webhook_secret: '', auto_submit: false, retry_on_failure: false, updated_at: '' } as unknown as EcfProviderConfig;
@@ -65,9 +66,9 @@ export class ElectronicComponent implements OnInit {
     if (!this.config) return;
     this.saving = true;
     if (this.config.id) {
-      await this.supabase.client.from('ecf_provider_config').update({ ...this.config, updated_at: new Date().toISOString() }).eq('id', this.config.id);
+      await this.db.client.from('ecf_provider_config').update({ ...this.config, updated_at: new Date().toISOString() }).eq('id', this.config.id);
     } else {
-      const { data } = await this.supabase.client.from('ecf_provider_config').insert({ ...this.config, updated_at: new Date().toISOString() }).select().single();
+      const { data } = await this.db.client.from('ecf_provider_config').insert({ ...this.config, updated_at: new Date().toISOString() }).select().single();
       if (data) this.config = data;
     }
     this.saving = false; this.message = 'Guardado correctamente'; this.messageOk = true;

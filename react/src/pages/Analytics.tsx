@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { TrendingUp, TrendingDown, DollarSign, BarChart2, PieChart, Plus, Trash2, CreditCard as Edit2, X, Check, Filter, Calendar, ArrowUpRight, ArrowDownRight, Target, Activity, Briefcase, ShoppingCart, Building2 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/db';
+import { useAuth } from '../lib/auth';
 import { useInvoices } from '../lib/hooks';
 import { useCompany } from '../lib/company';
 import { useI18n } from '../lib/i18n';
@@ -66,12 +67,13 @@ function pct(a: number, b: number) {
 // ── Hooks ────────────────────────────────────────────────────────────────────
 
 function useExpenses(companyId?: string) {
+  const { user } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    let query = supabase.from('expenses').select('*').order('date', { ascending: false });
+    let query = db.from('expenses').select('*').order('date', { ascending: false });
     if (companyId) {
       query = query.eq('company_id', companyId);
     }
@@ -83,19 +85,18 @@ function useExpenses(companyId?: string) {
   useEffect(() => { fetch(); }, [fetch]);
 
   const add = useCallback(async (form: ExpenseForm) => {
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    await supabase.from('expenses').insert({ ...form, user_id: user.id, ...(companyId ? { company_id: companyId } : {}) });
+    await db.from('expenses').insert({ ...form, user_id: user.id, ...(companyId ? { company_id: companyId } : {}) });
     fetch();
-  }, [fetch, companyId]);
+  }, [fetch, companyId, user]);
 
   const update = useCallback(async (id: string, form: Partial<ExpenseForm>) => {
-    await supabase.from('expenses').update({ ...form, updated_at: new Date().toISOString() }).eq('id', id);
+    await db.from('expenses').update({ ...form, updated_at: new Date().toISOString() }).eq('id', id);
     fetch();
   }, [fetch]);
 
   const remove = useCallback(async (id: string) => {
-    await supabase.from('expenses').delete().eq('id', id);
+    await db.from('expenses').delete().eq('id', id);
     fetch();
   }, [fetch]);
 
@@ -311,11 +312,16 @@ function useAllCompaniesSummary(enabled: boolean) {
     if (!enabled) return;
     setLoading(true);
     Promise.all([
-      supabase.from('companies').select('id, name').eq('is_active', true).order('name'),
-      supabase.from('invoices').select('company_id, status, total, amount_paid'),
+      db.from('companies').select('id, name').eq('is_active', true).order('name'),
+      db.from('invoices').select('company_id, status, total, amount_paid'),
     ]).then(([companiesRes, invoicesRes]) => {
-      const companies = companiesRes.data ?? [];
-      const invoices = invoicesRes.data ?? [];
+      const companies = (companiesRes.data ?? []) as Array<{ id: string; name: string }>;
+      const invoices = (invoicesRes.data ?? []) as Array<{
+        company_id: string;
+        status: string;
+        total: number;
+        amount_paid: number;
+      }>;
       const result: CompanySummary[] = companies.map(co => {
         const coInvoices = invoices.filter(i => i.company_id === co.id);
         const revenue = coInvoices.filter(i => i.status === 'paid').reduce((s, i) => s + i.total, 0);

@@ -5,7 +5,7 @@ import { I18nService } from '../../services/i18n.service';
 import { DataService } from '../../services/data.service';
 import { PermissionsService } from '../../services/permissions.service';
 import { ModalComponent } from '../../components/modal.component';
-import { ProductService } from '../../services/supabase.service';
+import { ProductService } from '../../services/models';
 
 @Component({
   selector: 'app-products',

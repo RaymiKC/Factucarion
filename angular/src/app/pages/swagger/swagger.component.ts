@@ -1,7 +1,7 @@
 import { Component, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { I18nService } from '../../services/i18n.service';
-import { environment } from '../../../environments/environment';
+import { API_BASE, getAuthToken } from '../../services/db.service';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 declare const SwaggerUIBundle: any;
@@ -25,13 +25,13 @@ export class SwaggerComponent implements AfterViewInit {
     script.src = 'https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js';
     script.onload = () => {
       SwaggerUIBundle({
-        url: `${environment.supabaseUrl}/functions/v1/api/openapi`,
+        url: `${API_BASE}/openapi.json`,
         dom_id: '#swagger-ui',
         presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
         layout: 'BaseLayout',
         requestInterceptor: (req: any) => {
-          req.headers['Authorization'] = `Bearer ${environment.supabaseAnonKey}`;
-          req.headers['apikey'] = environment.supabaseAnonKey;
+          const token = getAuthToken();
+          if (token) req.headers['Authorization'] = `Bearer ${token}`;
           return req;
         },
       });

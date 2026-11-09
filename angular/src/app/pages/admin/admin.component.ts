@@ -7,7 +7,8 @@ import { PermissionsService, PAGE_LIST } from '../../services/permissions.servic
 import { AuthService } from '../../services/auth.service';
 import { CompanyService } from '../../services/company.service';
 import { ModalComponent } from '../../components/modal.component';
-import { SupabaseService, UserConfig } from '../../services/supabase.service';
+import { DbService } from '../../services/db.service';
+import { UserConfig } from '../../services/models';
 
 type AdminTab = 'companies' | 'settings' | 'users' | 'permissions' | 'tax_rates' | 'email' | 'features' | 'region';
 
@@ -332,7 +333,7 @@ export class AdminComponent implements OnInit {
 
   constructor(
     public i18n: I18nService, public data: DataService, public perms: PermissionsService,
-    public auth: AuthService, public companyService: CompanyService, private supabase: SupabaseService,
+    public auth: AuthService, public companyService: CompanyService, private db: DbService,
   ) {}
 
   ngOnInit() {
@@ -347,9 +348,9 @@ export class AdminComponent implements OnInit {
   async saveCompany() {
     this.saving = true;
     if (this.editingCompany) {
-      await this.supabase.client.from('companies').update({ ...this.companyForm, updated_at: new Date().toISOString() }).eq('id', (this.editingCompany as Record<string, string>)['id']);
+      await this.db.client.from('companies').update({ ...this.companyForm, updated_at: new Date().toISOString() }).eq('id', (this.editingCompany as Record<string, string>)['id']);
     } else {
-      await this.supabase.client.from('companies').insert({ ...this.companyForm, is_active: true });
+      await this.db.client.from('companies').insert({ ...this.companyForm, is_active: true });
     }
     await this.companyService.loadCompanies();
     this.saving = false; this.showCompanyModal = false;
@@ -362,11 +363,11 @@ export class AdminComponent implements OnInit {
     if (!this.userForm.name || !this.userForm.email) { this.formError = 'Nombre y correo son requeridos'; return; }
     this.saving = true; this.formError = '';
     if (this.editingUser) {
-      await this.supabase.client.from('users_config').update({ ...this.userForm, updated_at: new Date().toISOString() }).eq('id', this.editingUser.id);
+      await this.db.client.from('users_config').update({ ...this.userForm, updated_at: new Date().toISOString() }).eq('id', this.editingUser.id);
     } else {
       const tempPass = this.auth.generateTempPassword();
-      const hash = await this.auth.hashPassword(tempPass);
-      await this.supabase.client.from('users_config').insert({ ...this.userForm, password_hash: hash, must_change_password: true, temp_password: tempPass, failed_login_attempts: 0 });
+      // The API hashes temp_password with bcrypt before storing it.
+      await this.db.client.from('users_config').insert({ ...this.userForm, must_change_password: true, temp_password: tempPass, failed_login_attempts: 0 });
       await this.auth.sendWelcomeEmail(this.userForm.email, this.userForm.name, tempPass, this.userForm.email_language);
       this.tempPassValue = tempPass; this.tempPassUser = this.userForm.name; this.showTempPassModal = true;
     }
@@ -377,12 +378,12 @@ export class AdminComponent implements OnInit {
   copyTempPass() { navigator.clipboard.writeText(this.tempPassValue).catch(() => {}); }
 
   async saveSetting(s: { id: string; key: string; value: string }) {
-    await this.supabase.client.from('settings').update({ value: s.value, updated_at: new Date().toISOString() }).eq('id', s.id);
+    await this.db.client.from('settings').update({ value: s.value, updated_at: new Date().toISOString() }).eq('id', s.id);
   }
 
   async saveSettingByKey(key: string, e: Event) {
     const val = (e.target as HTMLInputElement).value;
-    await this.supabase.client.from('settings').update({ value: val, updated_at: new Date().toISOString() }).eq('key', key);
+    await this.db.client.from('settings').update({ value: val, updated_at: new Date().toISOString() }).eq('key', key);
   }
 
   getPerm(role: string, page: string, field: string): boolean {
@@ -396,7 +397,7 @@ export class AdminComponent implements OnInit {
   }
 
   async toggleFlag(f: { id: string; name: string; is_enabled: boolean }) {
-    await this.supabase.client.from('feature_flags').update({ is_enabled: !f.is_enabled, updated_at: new Date().toISOString() }).eq('id', f.id);
+    await this.db.client.from('feature_flags').update({ is_enabled: !f.is_enabled, updated_at: new Date().toISOString() }).eq('id', f.id);
     await this.data.loadFeatureFlags();
   }
 
@@ -405,7 +406,7 @@ export class AdminComponent implements OnInit {
   async confirmReset() {
     if (this.resetConfirmText !== 'RESTABLECER') return;
     this.resetting = true;
-    const db = this.supabase.client;
+    const db = this.db.client;
     await Promise.all([
       db.from('invoices').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
       db.from('clients').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
@@ -414,8 +415,8 @@ export class AdminComponent implements OnInit {
       db.from('notifications').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
       db.from('email_log').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
     ]);
-    const hash = await this.auth.hashPassword('admin');
-    await db.from('users_config').update({ password_hash: hash, must_change_password: false, failed_login_attempts: 0, locked_until: null }).eq('role', 'admin');
+    // The API hashes the supplied "password" value with bcrypt.
+    await db.from('users_config').update({ password: 'admin', must_change_password: false, failed_login_attempts: 0, locked_until: null }).eq('role', 'admin');
     this.resetting = false; this.showResetModal = false;
     await this.data.loadAll(this.companyService.currentCompany()?.id);
   }
@@ -424,7 +425,7 @@ export class AdminComponent implements OnInit {
 
   async saveTax() {
     this.saving = true;
-    await this.supabase.client.from('tax_rates').insert(this.taxForm);
+    await this.db.client.from('tax_rates').insert(this.taxForm);
     await this.data.loadTaxRates();
     this.saving = false; this.showTaxModal = false;
   }

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { FileDown, Calendar, Filter, ChevronDown, Building2, Printer } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/db';
 import { useCompany } from '../lib/company';
 import { useEffect, useCallback } from 'react';
 
@@ -68,7 +68,7 @@ function useMonthlyReport(companyId: string | undefined, month: string) {
     const [y, m] = month.split('-').map(Number);
     const to = new Date(y, m, 0).toISOString().split('T')[0];
 
-    const { data } = await supabase
+    const { data } = await db
       .from('invoices')
       .select('*, clients(id, name, rnc)')
       .eq('company_id', companyId)

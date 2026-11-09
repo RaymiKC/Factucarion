@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { I18nService } from '../../services/i18n.service';
 import { DataService } from '../../services/data.service';
 import { CompanyService } from '../../services/company.service';
-import { SupabaseService } from '../../services/supabase.service';
+import { DbService } from '../../services/db.service';
 
 interface Expense { id: string; amount: number; category: string; description: string; date: string; company_id?: string; }
 
@@ -119,7 +119,7 @@ export class AnalyticsComponent implements OnInit {
   showAddExpense = false;
   newExp = { description: '', category: '', amount: 0, date: new Date().toISOString().split('T')[0] };
 
-  constructor(public i18n: I18nService, public data: DataService, private company: CompanyService, private supabase: SupabaseService) {}
+  constructor(public i18n: I18nService, public data: DataService, private company: CompanyService, private db: DbService) {}
 
   ngOnInit() {
     this.data.loadInvoices(this.company.currentCompany()?.id);
@@ -127,7 +127,7 @@ export class AnalyticsComponent implements OnInit {
   }
 
   async loadExpenses() {
-    const { data } = await this.supabase.client.from('expenses').select('*').order('date', { ascending: false });
+    const { data } = await this.db.client.from('expenses').select('*').order('date', { ascending: false });
     this.expenses = data ?? [];
   }
 
@@ -159,7 +159,7 @@ export class AnalyticsComponent implements OnInit {
   async addExpense() {
     if (!this.newExp.description || !this.newExp.amount) return;
     const companyId = this.company.currentCompany()?.id;
-    await this.supabase.client.from('expenses').insert({ ...this.newExp, company_id: companyId });
+    await this.db.client.from('expenses').insert({ ...this.newExp, company_id: companyId });
     this.showAddExpense = false;
     this.newExp = { description: '', category: '', amount: 0, date: new Date().toISOString().split('T')[0] };
     await this.loadExpenses();
