@@ -146,14 +146,13 @@ Passwords are **never** checked by a server function; verification is client-sid
   (`database/postgres/05_upgrade_existing.sql`, `database/sqlserver/05_upgrade_existing.sql`):
   `clients, invoices, products_services, tax_rates, ncf_sequences, expenses, email_schedules,
   feature_flags, settings, users_config, ecf_provider_config`.
-  Child tables (`invoice_items`, `payment_records`, `notifications`, `email_log`) have **no**
-  `company_id`; their tenancy is inherited through `invoice_id` / `client_id`, so a query on them is
-  only tenant-safe when joined to a scoped parent.
+  Child tables (`payment_records`, `notifications`, `email_log`, `ncf_void_log`) also carry
+  `company_id`; only `invoice_items` does not, so its tenancy is inherited through `invoice_id`.
 
 **Rule:** any new query against a tenant table must filter `company_id`. Any insert must set it. For
-child tables, filter by the parent's ids that you already scoped — **never** add
-`.eq('company_id', ...)` to a child-table query (three existing call sites get this wrong and silently
-return nothing: see `memory/known-issues.md` K-016).
+`invoice_items`, filter by the parent invoice ids that you already scoped — **never** add
+`.eq('company_id', ...)` to an `invoice_items` query (three existing call sites get this wrong and
+silently return nothing: see `memory/known-issues.md` K-016).
 
 ### 4.5 Permissions
 
@@ -253,7 +252,7 @@ email_schedules, email_log, settings, users_config, feature_flags`
 
 | Concern | Convention |
 |---|---|
-| Tenant key | `company_id NOT NULL` on the 11 tenant tables (see §4.4); child tables inherit via `invoice_id` / `client_id` |
+| Tenant key | `company_id NOT NULL` on the 11 tenant tables (see §4.4); `invoice_items` inherits through `invoice_id` |
 | Settings | `settings` is key/value per company, `UNIQUE (company_id, key)`; read with `useSettings().getSetting('key')` |
 | Money/numeric | `numeric(12,2)` in DB, plain `number` in TS |
 | Dates | `date` for business dates (`issue_date`, `due_date`), `timestamptz` for audit fields |

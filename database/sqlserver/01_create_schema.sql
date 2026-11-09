@@ -165,7 +165,7 @@ BEGIN
         electronic_status   NVARCHAR(50)     NOT NULL DEFAULT 'pending',
         electronic_id       NVARCHAR(255)    NOT NULL DEFAULT '',
         electronic_response NVARCHAR(MAX)    NULL,
-        recurrence_rule     NVARCHAR(255)    NOT NULL DEFAULT '',
+        recurrence_rule     NVARCHAR(255)    DEFAULT '',
         recurrence_end      DATE             NULL,
         parent_invoice_id   UNIQUEIDENTIFIER NULL,
         sent_at             DATETIME2        NULL,

@@ -113,6 +113,13 @@ if (-not $Database) {
     $Database = if ($Provider -eq 'postgres') { 'facturpro' } else { 'FacturaPro' }
 }
 
+function Assert-TargetDatabase {
+    param([string] $Actual)
+    if ("$Actual".Trim() -ne $Database) {
+        throw "Client connected to '$("$Actual".Trim())' instead of '$Database'. Aborting so the wrong database is never modified."
+    }
+}
+
 function Write-Step {
     param([string] $Message)
     Write-Host "==> $Message" -ForegroundColor Cyan
@@ -199,7 +206,9 @@ function Invoke-PostgresSetup {
     }
 
     $previousPassword = $env:PGPASSWORD
+    $previousEncoding = $env:PGCLIENTENCODING
     $env:PGPASSWORD = $PgPassword
+    $env:PGCLIENTENCODING = 'UTF8'
     $safeDatabase = $Database.Replace("'", "''")
 
     try {
@@ -223,6 +232,9 @@ function Invoke-PostgresSetup {
 
         foreach ($file in Get-ScriptFiles) {
             Write-Step "Running $(Split-Path -Leaf $file)"
+            $current = & $Psql @connection -d $Database -tAc 'SELECT current_database()'
+            if ($LASTEXITCODE -ne 0) { throw "Cannot open database '$Database'." }
+            Assert-TargetDatabase $current
             & $Psql @connection -d $Database -f $file
             if ($LASTEXITCODE -ne 0) { throw "Failed while running $(Split-Path -Leaf $file)." }
             Write-Done 'OK'
@@ -230,6 +242,7 @@ function Invoke-PostgresSetup {
     }
     finally {
         $env:PGPASSWORD = $previousPassword
+        $env:PGCLIENTENCODING = $previousEncoding
     }
 }
 
@@ -238,7 +251,7 @@ function Invoke-SqlServerSetup {
 
     $previousPassword = $env:SQLCMDPASSWORD
 
-    $connection = @('-S', "$MssqlServer,$MssqlPort", '-b', '-I', '-l', '60')
+    $connection = @('-S', "$MssqlServer,$MssqlPort", '-b', '-I', '-l', '60', '-f', '65001')
     if ($TrustedConnection) {
         $connection += '-E'
     }
@@ -267,6 +280,10 @@ function Invoke-SqlServerSetup {
         else {
             Write-Done "Database '$Database' already exists."
         }
+
+        $current = & $Sqlcmd @connection -d $Database -h -1 -W -Q 'SET NOCOUNT ON; SELECT DB_NAME();'
+        if ($LASTEXITCODE -ne 0) { throw "Cannot open database '$Database'." }
+        Assert-TargetDatabase $current
 
         foreach ($file in Get-ScriptFiles) {
             Write-Step "Running $(Split-Path -Leaf $file)"

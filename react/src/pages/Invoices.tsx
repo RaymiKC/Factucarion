@@ -64,8 +64,9 @@ async function assignNcf(ncfType: string, companyId?: string): Promise<string> {
   return ncf;
 }
 
-async function markNcfVoidLog(invoice: Invoice, reuseAllowed: boolean) {
+async function markNcfVoidLog(invoice: Invoice, reuseAllowed: boolean, companyId: string | undefined) {
   await db.from('ncf_void_log').insert({
+    company_id: companyId,
     invoice_id: invoice.id,
     invoice_number: invoice.invoice_number,
     ncf: invoice.ncf,
@@ -233,6 +234,7 @@ export default function Invoices({ companyId }: InvoicesProps = {}) {
           .eq('issue_month', currentMonth);
       }
       await db.from('notifications').insert({
+        company_id: companyId,
         type: 'system', title: 'Factura creada',
         message: `Factura ${invoiceNumber}${ncf ? ` (NCF: ${ncf})` : ''} creada por ${formatCurrency(totals.total)}`,
         invoice_id: inv.id,
@@ -253,8 +255,9 @@ export default function Invoices({ companyId }: InvoicesProps = {}) {
     const currentMonth = new Date().toISOString().substring(0, 7);
     const reuseAllowed = issueMonth === currentMonth;
     await db.from('invoices').update({ status: 'cancelled', updated_at: new Date().toISOString() }).eq('id', inv.id);
-    if (inv.ncf) await markNcfVoidLog(inv, reuseAllowed);
+    if (inv.ncf) await markNcfVoidLog(inv, reuseAllowed, companyId);
     await db.from('notifications').insert({
+      company_id: companyId,
       type: 'system', title: t('invoice_cancelled'),
       message: `${t('invoice_cancelled')}: ${inv.invoice_number}${inv.ncf ? ` (${regionConfig.invoiceNumberLabel}: ${inv.ncf})` : ''}. ${reuseAllowed ? t('ncf_reusable') : t('ncf_lost')}.`,
       invoice_id: inv.id,
@@ -265,7 +268,7 @@ export default function Invoices({ companyId }: InvoicesProps = {}) {
 
   async function handlePayment() {
     if (!payModal) return;
-    await db.from('payment_records').insert({ invoice_id: payModal.id, ...payForm });
+    await db.from('payment_records').insert({ company_id: companyId, invoice_id: payModal.id, ...payForm });
     const newPaid   = payModal.amount_paid + payForm.amount;
     const newStatus = newPaid >= payModal.total ? 'paid' : 'partial';
     await db.from('invoices').update({
@@ -273,6 +276,7 @@ export default function Invoices({ companyId }: InvoicesProps = {}) {
       payment_date: newStatus === 'paid' ? payForm.payment_date : undefined,
     }).eq('id', payModal.id);
     await db.from('notifications').insert({
+      company_id: companyId,
       type: 'payment_received', title: t('payment_received_notif'),
       message: `${formatCurrency(payForm.amount)} — ${payModal.invoice_number}`,
       invoice_id: payModal.id,
@@ -354,6 +358,7 @@ export default function Invoices({ companyId }: InvoicesProps = {}) {
     }).eq('id', invoice.id);
 
     await db.from('notifications').insert({
+      company_id: companyId,
       type: 'electronic',
       title: approved ? 'e-CF Aprobado' : 'e-CF Rechazado',
       message: approved

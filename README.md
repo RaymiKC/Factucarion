@@ -61,18 +61,22 @@ Prerequisites: Node.js 20+, and either PostgreSQL or SQL Server.
 
 ### 1. Create the database
 
-One command handles both engines (see [`database/README.md`](./database/README.md) for all options):
+From the repository root:
 
 ```powershell
 cd database
-.\setup.ps1 -PgPassword '<postgres-password>' -WriteEnv     # PostgreSQL
-.\setup.ps1 -Provider sqlserver -TrustedConnection -WriteEnv # SQL Server
+.\setup.ps1 -PgPassword '<postgres-password>' -WriteEnv      # PostgreSQL
+.\setup.ps1 -Provider sqlserver -TrustedConnection -WriteEnv  # SQL Server
+cd ..                                                         # back to the repository root
 ```
 
 `-WriteEnv` also generates `server/.env` with a random `JWT_SECRET`. Without it, copy
 `server/.env.example` to `server/.env` yourself.
 
-Prefer the manual route? Run the SQL files by hand:
+If PowerShell blocks the script (`... running scripts is disabled on this system`), run it with
+`powershell -ExecutionPolicy Bypass -File .\setup.ps1 <same arguments>`.
+
+Prefer the manual route? Run the SQL files by hand (also from the repository root):
 
 ```powershell
 # PostgreSQL — fresh install
@@ -89,16 +93,20 @@ Already have data? Add `-Upgrade` to run only the idempotent `05_upgrade_existin
 
 ### 2. Start the API
 
+From the repository root (first terminal):
+
 ```powershell
 cd server
 npm install
-Copy-Item .env.example .env    # skip this if you already ran setup.ps1 -WriteEnv
+Copy-Item .env.example .env    # skip if setup.ps1 -WriteEnv already created server/.env
 npm run dev                    # http://localhost:3001
 ```
 
 `npm run smoke` runs an end-to-end health + login + CRUD check against the configured database.
 
 ### 3. Start a front-end
+
+Leave the API running and open a second terminal at the repository root:
 
 ```powershell
 cd react                      # or: cd angular
@@ -107,8 +115,8 @@ Copy-Item .env.example .env   # react only; VITE_API_BASE=http://localhost:3001
 npm run dev                   # react → http://localhost:5173
 ```
 
-Angular uses `npm start` (→ `http://localhost:4200`) and reads the API URL from
-`angular/src/environments/environment.ts`.
+For Angular use `npm start` instead of `npm run dev` (→ `http://localhost:4200`); it reads the API URL
+from `angular/src/environments/environment.ts`.
 
 ### 4. Sign in
 

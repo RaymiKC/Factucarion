@@ -18,6 +18,7 @@ The move to a self-hosted API (`server/`) plus PostgreSQL/SQL Server (`database/
 | K-002 — `db.ts` provider abstraction was dead code | **Resolved.** `react/src/lib/db.ts` and `angular/src/app/services/db.service.ts` are now the only data path. |
 | K-003 — passwords verified in the browser (unsalted SHA-256) | **Resolved.** bcrypt in `server/src/routes/auth.ts`; legacy hashes upgraded on next login. |
 | Edge-function mail + `environment.ts` holding a Supabase URL/key | **Resolved.** SMTP lives in `server/.env`; the tracked `environment.ts` now only holds `apiBase`. |
+| Notification, payment, NCF-void and tax-rate inserts omitted `company_id`; `invoices.recurrence_rule` was `NOT NULL` although both clients insert `null` for one-time invoices | **Resolved.** The inserts set `company_id`; `recurrence_rule` is nullable in both engines (fresh schema + `05_upgrade_existing.sql`). |
 
 ---
 

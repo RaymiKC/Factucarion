@@ -359,6 +359,9 @@ INSERT INTO feature_flags (name, description, is_enabled)
 VALUES ('otp_required_for_all', 'Require OTP verification for all users on every login', false)
 ON CONFLICT (name) DO NOTHING;
 
+-- One-time invoices are inserted with recurrence_rule = NULL, so the column must be nullable
+ALTER TABLE invoices ALTER COLUMN recurrence_rule DROP NOT NULL;
+
 -- ============================================================
 -- END OF UPGRADE SCRIPT
 -- ============================================================

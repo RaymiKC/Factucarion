@@ -359,6 +359,16 @@ CREATE TABLE otp_tokens (
 );
 GO
 
+-- One-time invoices are inserted with recurrence_rule = NULL, so the column must be nullable
+IF EXISTS (
+    SELECT 1 FROM sys.columns
+    WHERE object_id = OBJECT_ID('invoices') AND name = 'recurrence_rule' AND is_nullable = 0
+)
+BEGIN
+    ALTER TABLE invoices ALTER COLUMN recurrence_rule NVARCHAR(255) NULL;
+END
+GO
+
 /*
 ================================================================================
   END OF UPGRADE SCRIPT

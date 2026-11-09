@@ -837,7 +837,7 @@ export default function Admin({ companyId }: AdminProps = {}) {
     if (editingTax) {
       await db.from('tax_rates').update(taxForm).eq('id', editingTax.id);
     } else {
-      await db.from('tax_rates').insert({ ...taxForm, is_active: true });
+      await db.from('tax_rates').insert({ ...taxForm, company_id: companyId, is_active: true });
     }
     setTaxModal(false);
     refetchTaxes();

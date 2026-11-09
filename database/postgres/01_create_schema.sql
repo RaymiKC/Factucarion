@@ -142,7 +142,7 @@ CREATE TABLE IF NOT EXISTS invoices (
     electronic_status     TEXT        NOT NULL DEFAULT 'pending',
     electronic_id         TEXT        NOT NULL DEFAULT '',
     electronic_response   JSONB,
-    recurrence_rule       TEXT        NOT NULL DEFAULT '',
+    recurrence_rule       TEXT        DEFAULT '',
     recurrence_end        DATE,
     parent_invoice_id     UUID        REFERENCES invoices(id) ON DELETE SET NULL,
     sent_at               TIMESTAMPTZ,

@@ -132,5 +132,8 @@ MSSQL_TRUSTED_CONNECTION=true
   `SELECT *`-style access cannot reach tables that do not exist.
 - SQL Server `UNIQUEIDENTIFIER` values are lower-cased by the API so ids behave identically on both
   engines.
+- `setup.ps1` runs the scripts as UTF-8 (`sqlcmd -f 65001`, `PGCLIENTENCODING=UTF8`) so accented seed
+  text such as `República Dominicana` is stored correctly. Plain `sqlcmd -i` without `-f 65001` mangles
+  it.
 - `05_upgrade_existing.sql` is idempotent; run it after pulling changes against a database that
   already has data. It also drops the obsolete `users_config.supabase_uid` column.
