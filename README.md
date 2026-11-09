@@ -61,6 +61,19 @@ Prerequisites: Node.js 20+, and either PostgreSQL or SQL Server.
 
 ### 1. Create the database
 
+One command handles both engines (see [`database/README.md`](./database/README.md) for all options):
+
+```powershell
+cd database
+.\setup.ps1 -PgPassword '<postgres-password>' -WriteEnv     # PostgreSQL
+.\setup.ps1 -Provider sqlserver -TrustedConnection -WriteEnv # SQL Server
+```
+
+`-WriteEnv` also generates `server/.env` with a random `JWT_SECRET`. Without it, copy
+`server/.env.example` to `server/.env` yourself.
+
+Prefer the manual route? Run the SQL files by hand:
+
 ```powershell
 # PostgreSQL — fresh install
 $env:PGPASSWORD='<password>'
@@ -72,14 +85,14 @@ Get-ChildItem database\postgres\0[1-4]_*.sql | ForEach-Object {
 ```
 
 SQL Server commands and connection options are in [`database/README.md`](./database/README.md).
-Already have data? Run only `05_upgrade_existing.sql` — it is idempotent.
+Already have data? Add `-Upgrade` to run only the idempotent `05_upgrade_existing.sql`.
 
 ### 2. Start the API
 
 ```powershell
 cd server
 npm install
-Copy-Item .env.example .env    # set DB_PROVIDER + connection string + JWT_SECRET
+Copy-Item .env.example .env    # skip this if you already ran setup.ps1 -WriteEnv
 npm run dev                    # http://localhost:3001
 ```
 

@@ -4,6 +4,7 @@ SQL for both supported backends lives here — one folder per engine, identical 
 
 ```
 database/
+├─ setup.ps1                   # one-command first-time setup (either engine)
 ├─ postgres/
 │  ├─ 01_create_schema.sql     # tables, indexes, constraints (incl. otp_tokens)
 │  ├─ 02_seed_data.sql         # default company, tax rates, settings, roles, admin user
@@ -19,6 +20,48 @@ database/
 ```
 
 Both schemas expose the same 23 tables, so the API (`server/`) and both frontends work unchanged.
+
+## Quick setup (one command)
+
+`setup.ps1` creates the database when it is missing and applies the scripts in order
+(schema → seed → functions/stored procedures → views). Every script is idempotent, so re-running the
+command is safe.
+
+```powershell
+cd database
+
+# PostgreSQL (default port 5432, database facturpro)
+.\setup.ps1 -PgPassword '<postgres-password>'
+
+# PostgreSQL on a different port, and generate server\.env at the same time
+.\setup.ps1 -PgPassword '<postgres-password>' -PgPort 5434 -WriteEnv
+
+# SQL Server with Windows authentication
+.\setup.ps1 -Provider sqlserver -TrustedConnection
+
+# SQL Server with a SQL login
+.\setup.ps1 -Provider sqlserver -MssqlUser sa -MssqlPassword '<sa-password>' -WriteEnv
+
+# Database that already has data from an older schema
+.\setup.ps1 -Provider sqlserver -TrustedConnection -Upgrade
+```
+
+| Parameter | Default | Notes |
+|---|---|---|
+| `-Provider` | `postgres` | `postgres` or `sqlserver` |
+| `-Database` | `facturpro` / `FacturaPro` | Created if it does not exist |
+| `-PgHost`, `-PgPort`, `-PgUser` | `127.0.0.1`, `5432`, `postgres` | User needs `CREATE DATABASE` |
+| `-PgPassword` | `$env:PGPASSWORD` | Never written to the command line log |
+| `-MssqlServer`, `-MssqlPort` | `localhost`, `1433` | Instance plus port |
+| `-MssqlUser`, `-MssqlPassword` | `sa`, `$env:SQLCMDPASSWORD` | Ignored with `-TrustedConnection` |
+| `-TrustedConnection` | off | Windows authentication (`-E`) |
+| `-Upgrade` | off | Runs only `05_upgrade_existing.sql` |
+| `-WriteEnv` | off | Writes `server\.env` from `.env.example` with a generated `JWT_SECRET` |
+| `-Force` | off | Overwrites an existing `server\.env` |
+| `-PsqlPath`, `-SqlcmdPath` | auto-detected | Override when the client tools are not on `PATH` |
+
+The SQL Server `.sql` files contain `USE [FacturaPro];`; the script drops that line and targets the
+`-Database` you pass, so a different name works without editing anything.
 
 ## Default admin
 
