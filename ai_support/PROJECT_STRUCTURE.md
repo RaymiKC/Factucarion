@@ -141,7 +141,7 @@ angular/
 │     │  ├─ layout.component.ts     # sidebar/shell                                  (~12.1 KB)
 │     │  ├─ modal.component.ts
 │     │  ├─ status-badge.component.ts
-│     │  └─ invoice-template.component.ts   # ⚠ 0 bytes — not implemented
+│     │  └─ invoice-template.component.ts   # printable invoice overlay (~17 KB)
 │     ├─ pages/
 │     │  ├─ admin/admin.component.ts        (~29 KB, subset of React Admin)
 │     │  ├─ invoices/invoices.component.ts  (~21 KB)

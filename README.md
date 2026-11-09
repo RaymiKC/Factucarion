@@ -45,7 +45,7 @@ There is no root `package.json`, no workspace tooling and no CI. Install and run
 | Folder | What it is |
 |---|---|
 | [`react/`](./react) | **Primary application** — Vite + React 18 + TypeScript + Tailwind |
-| [`angular/`](./angular) | Angular 20 port of the same app — partial parity, no printable invoice template yet |
+| [`angular/`](./angular) | Angular 20 port of the same app — partial parity (most screens, printable invoice) |
 | [`server/`](./server) | Express + TypeScript API; one SQL builder, two database dialects |
 | [`database/`](./database) | SQL for both engines (identical 23-table model): `postgres/` and `sqlserver/` |
 | [`ai_support/`](./ai_support) | Deep-dive documentation for AI assistants and new developers |
@@ -236,8 +236,7 @@ These are documented behaviours, not surprises:
   approval with a random `eCF-…` id.
 - **Recurring invoices are modelled, not scheduled** — the columns exist but nothing generates them.
 - **`audit_log` is never written** by either front-end.
-- **`angular/` is incomplete** — `invoice-template.component.ts` is empty and several admin tabs are
-  missing compared with React.
+- **`angular/` is incomplete** — several admin tabs are missing compared with React.
 - OTP delivery needs SMTP configured, or `OTP_DEBUG=true` for local development.
 
 See [`ai_support/memory/known-issues.md`](./ai_support/memory/known-issues.md) for the current list

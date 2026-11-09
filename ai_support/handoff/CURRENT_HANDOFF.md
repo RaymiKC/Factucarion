@@ -59,7 +59,7 @@ and `05_upgrade_existing.sql` against an already-populated legacy database.
 - [ ] K-014: the Admin email tab still edits `settings.smtp_*`, which nothing reads.
 - [ ] K-004: `next_invoice_number` counter update is not company-scoped.
 - [ ] K-015: e-CF third-party path is still a random simulation.
-- [ ] K-008: `angular/.../invoice-template.component.ts` is still 0 bytes.
+- [x] K-008 (part 1): Angular printable invoice template implemented.
 - [ ] K-007: recurring invoices still have no generator.
 - [ ] Decide Q-1 (`angular/` fate).
 

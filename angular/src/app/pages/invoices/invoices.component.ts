@@ -6,6 +6,7 @@ import { DataService } from '../../services/data.service';
 import { PermissionsService } from '../../services/permissions.service';
 import { CompanyService } from '../../services/company.service';
 import { ModalComponent } from '../../components/modal.component';
+import { InvoiceTemplateComponent } from '../../components/invoice-template.component';
 import { Invoice, InvoiceItem, Client, ProductService, TaxRate } from '../../services/models';
 
 interface InvoiceItemForm { description: string; quantity: number; unit_price: number; tax_rate: number; discount_percent: number; product_id: string | null; }
@@ -13,7 +14,7 @@ interface InvoiceItemForm { description: string; quantity: number; unit_price: n
 @Component({
   selector: 'app-invoices',
   standalone: true,
-  imports: [CommonModule, FormsModule, ModalComponent],
+  imports: [CommonModule, FormsModule, ModalComponent, InvoiceTemplateComponent],
   template: `
 <div class="space-y-4">
   <!-- Filters -->
@@ -66,6 +67,9 @@ interface InvoiceItemForm { description: string; quantity: number; unit_price: n
             </td>
             <td class="px-6 py-4" (click)="$event.stopPropagation()">
               <div class="flex gap-1 justify-end">
+                <button (click)="openPrint(inv)" class="p-1.5 text-gray-400 hover:text-sky-600 rounded-lg hover:bg-sky-50 dark:hover:bg-sky-900/20" title="{{i18n.t('print')}}">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 14h12v8H6z"/></svg>
+                </button>
                 <button *ngIf="perms.canEdit('invoices') && inv.status !== 'paid' && inv.status !== 'void'" (click)="markPaid(inv)" class="p-1.5 text-gray-400 hover:text-green-600 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20" title="{{i18n.t('mark_paid')}}">
                   <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                 </button>
@@ -184,8 +188,18 @@ interface InvoiceItemForm { description: string; quantity: number; unit_price: n
       <div class="flex justify-between font-bold text-lg text-gray-900 dark:text-white"><span>{{i18n.t('total')}}</span><span>{{data.formatCurrency(viewingInvoice.total, viewingInvoice.currency)}}</span></div>
     </div>
     <div *ngIf="viewingInvoice.notes" class="text-sm text-gray-500 dark:text-gray-400 italic">{{viewingInvoice.notes}}</div>
+    <div class="flex justify-end pt-2">
+      <button (click)="openPrint(viewingInvoice)" class="flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 14h12v8H6z"/></svg>
+        {{i18n.t('print')}}
+      </button>
+    </div>
   </div>
 </app-modal>
+
+<ng-container *ngIf="printInvoice as printingInvoice">
+  <app-invoice-template [invoice]="printingInvoice" (close)="printInvoice = null"></app-invoice-template>
+</ng-container>
   `
 })
 export class InvoicesComponent implements OnInit {
@@ -194,6 +208,7 @@ export class InvoicesComponent implements OnInit {
   showModal = false;
   editing: Invoice | null = null;
   viewingInvoice: (Invoice & { items?: InvoiceItem[] }) | null = null;
+  printInvoice: Invoice | null = null;
   saving = false;
   formError = '';
   statuses = ['draft','sent','paid','partial','overdue','cancelled','void'];
@@ -250,6 +265,11 @@ export class InvoicesComponent implements OnInit {
   async viewInvoice(inv: Invoice) {
     const { data } = await this.data.db.from('invoices').select('*, client:clients(*), items:invoice_items(*)').eq('id', inv.id).single();
     this.viewingInvoice = data;
+  }
+
+  async openPrint(inv: Invoice) {
+    const { data } = await this.data.db.from('invoices').select('*, client:clients(*), items:invoice_items(*)').eq('id', inv.id).single();
+    this.printInvoice = (data as Invoice | null) ?? inv;
   }
 
   addItem() { this.formItems.push({ description: '', quantity: 1, unit_price: 0, tax_rate: 18, discount_percent: 0, product_id: null }); }

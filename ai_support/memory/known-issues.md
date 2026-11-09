@@ -140,20 +140,16 @@ NCF per copy and links `parent_invoice_id`.
 ## K-008 — Angular parity gaps 🟠 high for anything shipped in React
 
 **What.**
-1. `angular/src/app/components/invoice-template.component.ts` is **0 bytes** — no printable invoice.
-2. `Admin` is ~29 KB vs ~108 KB in React (several tabs missing/simplified).
-3. Page permission keys differ: Angular `PAGE_LIST` has 12 entries including `email_schedules`,
+1. Angular `Admin` is ~29 KB vs ~108 KB in React (several tabs missing/simplified).
+2. Page permission keys differ: Angular `PAGE_LIST` has 12 entries including `email_schedules`,
    `monthly_report`, `swagger`; React `ALL_PAGES` has 10 and uses `email`, with `report`/`swagger`
    outside the registry. The same role rows therefore cannot satisfy both apps identically.
-4. Angular `environment.ts` is a tracked file with the Supabase URL and anon key; React uses an
-   untracked `.env`.
 
 **Why.** Anything "done" in React is not automatically done in Angular, and permission data seeded for
 one app may not match the other.
 
-**Evidence.** `angular/src/app/components/invoice-template.component.ts` (0 bytes),
-`angular/src/app/services/permissions.service.ts:10`, `react/src/lib/permissions.tsx:10-24`,
-`git ls-files` showing `angular/src/environments/environment.ts` tracked.
+**Evidence.** `angular/src/app/services/permissions.service.ts:10`, `react/src/lib/permissions.tsx:10-24`,
+`angular/src/app/pages/admin/admin.component.ts` vs `react/src/pages/Admin.tsx`.
 
 **Fix path.** Decide Q-1 in `decisions.md`; then either delete `angular/` or freeze a parity list and
 align the permission key registry between the two apps.

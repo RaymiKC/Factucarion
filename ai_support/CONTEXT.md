@@ -358,9 +358,10 @@ Differences you must not paper over:
 | Config | `import.meta.env` / `react/.env` (git-ignored) | `environments/environment.ts` (tracked, `apiBase` only) |
 | Completeness | full | partial (see below) |
 
-Known parity gaps at this commit: `components/invoice-template.component.ts` is **0 bytes** (no
-invoice template), and `Admin` is ~29 KB vs ~108 KB in React, so several admin tabs are missing or
-simplified. Verify before claiming a feature works in Angular.
+Known parity gaps at this commit: `Admin` is ~29 KB vs ~108 KB in React, so several admin tabs are
+missing or simplified. The printable invoice template now exists in both apps
+(`angular/src/app/components/invoice-template.component.ts` ported from
+`react/src/components/InvoiceTemplate.tsx`). Verify before claiming a feature works in Angular.
 
 ---
 
