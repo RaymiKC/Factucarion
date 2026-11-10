@@ -213,7 +213,7 @@ type AdminTab = 'companies' | 'settings' | 'users' | 'permissions' | 'tax_rates'
   <div *ngIf="activeTab === 'email'" class="space-y-4">
     <h2 class="font-semibold text-gray-900 dark:text-white">SMTP</h2>
     <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
-      <div class="grid grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div *ngFor="let key of smtpKeys">
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{key}}</label>
           <input [type]="key.includes('password') ? 'password' : 'text'" [value]="data.getSetting(key)" (blur)="saveSettingByKey(key, $event)" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none">
@@ -226,7 +226,7 @@ type AdminTab = 'companies' | 'settings' | 'users' | 'permissions' | 'tax_rates'
 <!-- Company Modal -->
 <app-modal [isOpen]="showCompanyModal" [title]="editingCompany ? i18n.t('edit') + ' ' + i18n.t('company') : 'Nueva Empresa'" (close)="showCompanyModal = false">
   <div class="space-y-4">
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div class="col-span-2"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{i18n.t('name')}} *</label><input [(ngModel)]="companyForm.name" type="text" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none"></div>
       <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">RNC</label><input [(ngModel)]="companyForm.rnc" type="text" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none"></div>
       <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{i18n.t('phone')}}</label><input [(ngModel)]="companyForm.phone" type="text" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none"></div>
@@ -243,7 +243,7 @@ type AdminTab = 'companies' | 'settings' | 'users' | 'permissions' | 'tax_rates'
 <!-- User Modal -->
 <app-modal [isOpen]="showUserModal" [title]="editingUser ? i18n.t('edit') : i18n.t('create_user')" (close)="showUserModal = false">
   <div class="space-y-4">
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div class="col-span-2"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{i18n.t('name')}} *</label><input [(ngModel)]="userForm.name" type="text" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none"></div>
       <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{i18n.t('email')}} *</label><input [(ngModel)]="userForm.email" type="email" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none"></div>
       <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{i18n.t('role')}}</label>

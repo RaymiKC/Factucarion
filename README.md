@@ -196,6 +196,19 @@ Never hard-code `B01` — the meaning of `ncf_type` depends on the selected regi
 The React app has **no router**: `App.tsx` holds a `currentPage` state machine, so deep links and
 browser back/forward reset to the dashboard. Angular uses `@angular/router` with real URLs.
 
+### Mobile layout
+
+Both front-ends switch to a phone layout below 768px:
+
+- A bottom tab bar shows Panel / Facturas / Clientes / Productos, and **Más** opens the full drawer.
+- Dense tables become cards with the same actions; the invoice line-item editor becomes stacked cards.
+- Modals become bottom sheets with a drag handle and safe-area padding.
+- Inputs render at 16px so iOS never zooms when a field gets focus.
+- The printable invoice preview stacks its header and uses the full width; the print window copies the
+  app stylesheet, so the printed page looks like the preview.
+
+Desktop keeps the collapsible sidebar and tables.
+
 ### API surface
 
 - `POST /api/db/:table/{select|insert|update|delete|upsert}` — structured form used by both clients.

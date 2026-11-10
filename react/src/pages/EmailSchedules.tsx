@@ -121,7 +121,7 @@ export default function EmailSchedules({ companyId }: EmailSchedulesProps) {
           <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">{t('email_schedules_title')}</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Automatización de recordatorios y notificaciones</p>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+        <button onClick={openCreate} className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium px-4 py-2 rounded-lg whitespace-nowrap shrink-0 transition-colors">
           <Plus size={15} /> {t('new_rule')}
         </button>
       </div>
@@ -274,7 +274,7 @@ export default function EmailSchedules({ companyId }: EmailSchedulesProps) {
             <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
               className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500" placeholder="Ej: Recordatorio 7 días antes del vencimiento" />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('trigger_event')}</label>
               <select value={form.trigger_event} onChange={e => setForm(f => ({ ...f, trigger_event: e.target.value as EmailSchedule['trigger_event'] }))}

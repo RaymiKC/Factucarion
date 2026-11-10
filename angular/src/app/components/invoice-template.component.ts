@@ -82,11 +82,11 @@ const PRINT_STYLES = `
   standalone: true,
   imports: [CommonModule],
   template: `
-<div class="fixed inset-0 z-50 flex items-start justify-center bg-black/60 backdrop-blur-sm overflow-y-auto py-8 px-4">
+<div class="fixed inset-0 z-50 flex items-start justify-center bg-black/60 backdrop-blur-sm overflow-y-auto py-4 sm:py-8 px-2 sm:px-4">
   <!-- Action bar (never printed) -->
-  <div class="fixed top-4 right-4 flex items-center gap-2 z-10">
+  <div class="fixed top-2 right-2 sm:top-4 sm:right-4 flex items-center gap-2 z-10">
     <button (click)="print()"
-      class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-xl shadow transition-colors">
+      class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-3 sm:px-4 py-2 rounded-xl shadow transition-colors">
       <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/>
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 14h12v8H6z"/>
@@ -106,7 +106,7 @@ const PRINT_STYLES = `
     <div *ngIf="theme !== 'minimal'" class="h-2 w-full" [ngClass]="tc.accentBg"></div>
 
     <!-- Header -->
-    <div class="flex items-start justify-between px-10 pt-8 pb-6"
+    <div class="flex flex-col sm:flex-row items-start sm:justify-between gap-4 px-4 sm:px-10 pt-6 sm:pt-8 pb-5 sm:pb-6"
       [ngClass]="theme === 'minimal' ? 'border-b-2 border-slate-300' : 'border-b-4 ' + tc.borderColor">
 
       <div class="flex-1">
@@ -127,7 +127,7 @@ const PRINT_STYLES = `
         </div>
       </div>
 
-      <div class="ml-6 border-2 rounded-lg overflow-hidden min-w-[200px]" [ngClass]="tc.borderColor">
+      <div class="w-full sm:w-auto sm:ml-6 border-2 rounded-lg overflow-hidden sm:min-w-[200px]" [ngClass]="tc.borderColor">
         <div class="px-4 py-2" [ngClass]="tc.accentBg">
           <p class="text-center font-bold text-sm" [ngClass]="tc.accentText">{{i18n.t('print_invoice')}}</p>
         </div>
@@ -157,8 +157,8 @@ const PRINT_STYLES = `
     </div>
 
     <!-- Client -->
-    <div class="px-10 py-5 border-b border-slate-200 bg-slate-50">
-      <div class="grid grid-cols-2 gap-x-8 gap-y-1 text-xs">
+    <div class="px-4 sm:px-10 py-5 border-b border-slate-200 bg-slate-50">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1 text-xs">
         <div>
           <span class="font-bold text-slate-700">{{i18n.t('print_client')}} </span>
           <span class="font-bold text-slate-900">{{client?.name || '-'}}</span>
@@ -183,7 +183,7 @@ const PRINT_STYLES = `
     </div>
 
     <!-- Line items -->
-    <div class="px-10 py-4">
+    <div class="px-4 sm:px-10 py-4">
       <table class="w-full border-collapse text-xs">
         <thead>
           <tr [ngClass]="tc.tableHead">
@@ -205,7 +205,7 @@ const PRINT_STYLES = `
     </div>
 
     <!-- Totals -->
-    <div class="px-10 pb-6 flex justify-end">
+    <div class="px-4 sm:px-10 pb-6 flex justify-end">
       <table class="text-xs border-collapse" [style.minWidth.px]="240">
         <tbody>
           <tr [ngClass]="tc.tableHead">
@@ -234,7 +234,7 @@ const PRINT_STYLES = `
 
     <!-- Banking details -->
     <div *ngIf="bankName || bankAccount || bankIban"
-      class="mx-10 mb-6 p-4 border-t-2 text-xs text-slate-700 leading-relaxed" [ngClass]="tc.borderColor">
+      class="mx-4 sm:mx-10 mb-6 p-4 border-t-2 text-xs text-slate-700 leading-relaxed" [ngClass]="tc.borderColor">
       <p *ngIf="bankName">{{i18n.t('print_bank_checks')}} <strong>{{bankName}}</strong></p>
       <p *ngIf="bankAccount">{{i18n.t('print_bank_transfer')}} <strong>{{bankBankName || 'Banco'}}</strong>,
         {{i18n.t('print_bank_account')}} / <strong>{{bankAccount}}</strong></p>
@@ -248,12 +248,12 @@ const PRINT_STYLES = `
     </div>
 
     <!-- Notes -->
-    <div *ngIf="invoice.notes" class="mx-10 mb-6 p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 leading-relaxed">
+    <div *ngIf="invoice.notes" class="mx-4 sm:mx-10 mb-6 p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 leading-relaxed">
       {{invoice.notes}}
     </div>
 
     <!-- Footer -->
-    <div class="px-10 pb-8 flex items-center justify-between border-t-2 pt-4" [ngClass]="tc.borderColor">
+    <div class="px-4 sm:px-10 pb-8 flex flex-col sm:flex-row gap-2 sm:gap-0 sm:items-center sm:justify-between border-t-2 pt-4" [ngClass]="tc.borderColor">
       <div class="text-xs text-slate-400">
         <p>{{companyName}}</p>
         <p *ngIf="companyPhone">Tel: {{companyPhone}}</p>

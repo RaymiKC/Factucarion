@@ -136,11 +136,11 @@ export default function InvoiceTemplate({ invoice, onClose }: InvoiceTemplatePro
   const headerBorderClass = theme === 'minimal' ? 'border-b-2 border-slate-300' : `border-b-4 ${tc.borderColor}`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 backdrop-blur-sm overflow-y-auto py-8 px-4">
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 backdrop-blur-sm overflow-y-auto py-4 sm:py-8 px-2 sm:px-4">
       {/* Action bar */}
-      <div className="fixed top-4 right-4 flex items-center gap-2 z-10">
+      <div className="fixed top-2 right-2 sm:top-4 sm:right-4 flex items-center gap-2 z-10">
         <button onClick={handlePrint}
-          className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium px-4 py-2 rounded-lg shadow transition-colors">
+          className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium px-3 sm:px-4 py-2 rounded-lg shadow transition-colors">
           <Printer size={15} /> {t('print_btn')}
         </button>
         <button onClick={onClose}
@@ -158,7 +158,7 @@ export default function InvoiceTemplate({ invoice, onClose }: InvoiceTemplatePro
         )}
 
         {/* === HEADER === */}
-        <div className={`flex items-start justify-between px-10 pt-8 pb-6 ${headerBorderClass}`}>
+        <div className={`flex flex-col sm:flex-row items-start sm:justify-between gap-4 px-4 sm:px-10 pt-6 sm:pt-8 pb-5 sm:pb-6 ${headerBorderClass}`}>
           {/* Company block */}
           <div className="flex-1">
             {companyLogoUrl ? (
@@ -180,7 +180,7 @@ export default function InvoiceTemplate({ invoice, onClose }: InvoiceTemplatePro
           </div>
 
           {/* Invoice metadata box */}
-          <div className={`ml-6 border-2 ${tc.borderColor} rounded-lg overflow-hidden min-w-[200px]`}>
+          <div className={`w-full sm:w-auto sm:ml-6 border-2 ${tc.borderColor} rounded-lg overflow-hidden sm:min-w-[200px]`}>
             <div className={`px-4 py-2 ${tc.accentBg}`}>
               <p className={`text-center font-bold text-sm ${tc.accentText}`}>{t('print_invoice')}</p>
             </div>
@@ -214,8 +214,8 @@ export default function InvoiceTemplate({ invoice, onClose }: InvoiceTemplatePro
         </div>
 
         {/* === CLIENT INFO === */}
-        <div className="px-10 py-5 border-b border-slate-200 bg-slate-50">
-          <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-xs">
+        <div className="px-4 sm:px-10 py-5 border-b border-slate-200 bg-slate-50">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1 text-xs">
             <div>
               <span className="font-bold text-slate-700">{t('print_client')} </span>
               <span className="font-bold text-slate-900">{client?.name ?? '-'}</span>
@@ -246,7 +246,7 @@ export default function InvoiceTemplate({ invoice, onClose }: InvoiceTemplatePro
         </div>
 
         {/* === LINE ITEMS TABLE === */}
-        <div className="px-10 py-4">
+        <div className="px-4 sm:px-10 py-4">
           <table className="w-full border-collapse text-xs">
             <thead>
               <tr className={tc.tableHead}>
@@ -270,7 +270,7 @@ export default function InvoiceTemplate({ invoice, onClose }: InvoiceTemplatePro
         </div>
 
         {/* === TOTALS === */}
-        <div className="px-10 pb-6 flex justify-end">
+        <div className="px-4 sm:px-10 pb-6 flex justify-end">
           <table className="text-xs border-collapse" style={{ minWidth: 240 }}>
             <tbody>
               <tr className={tc.tableHead}>
@@ -301,7 +301,7 @@ export default function InvoiceTemplate({ invoice, onClose }: InvoiceTemplatePro
 
         {/* === BANKING DETAILS === */}
         {(bankName || bankAccount || bankIban) && (
-          <div className={`mx-10 mb-6 p-4 border-t-2 ${tc.borderColor} text-xs text-slate-700 leading-relaxed`}>
+          <div className={`mx-4 sm:mx-10 mb-6 p-4 border-t-2 ${tc.borderColor} text-xs text-slate-700 leading-relaxed`}>
             {bankName && <p>Todos los cheques y/o transferencias a nombre de: <strong>{bankName}</strong></p>}
             {bankAccount && <p>Transferencias a <strong>{getSetting('bank_bank_name') || 'Banco'}</strong>, Cuenta Corriente / <strong>{bankAccount}</strong></p>}
             {bankIban && <p>Cuenta Regional / <strong>{bankIban}</strong></p>}
@@ -318,13 +318,13 @@ export default function InvoiceTemplate({ invoice, onClose }: InvoiceTemplatePro
 
         {/* === NOTES === */}
         {invoice.notes && (
-          <div className="mx-10 mb-6 p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 leading-relaxed">
+          <div className="mx-4 sm:mx-10 mb-6 p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 leading-relaxed">
             {invoice.notes}
           </div>
         )}
 
         {/* === FOOTER === */}
-        <div className={`px-10 pb-8 flex items-center justify-between border-t-2 ${tc.borderColor} pt-4`}>
+        <div className={`px-4 sm:px-10 pb-8 flex flex-col sm:flex-row gap-2 sm:gap-0 sm:items-center sm:justify-between border-t-2 ${tc.borderColor} pt-4`}>
           <div className="text-xs text-slate-400">
             <p>{companyName}</p>
             {companyPhone && <p>Tel: {companyPhone}</p>}

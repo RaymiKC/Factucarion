@@ -24,7 +24,7 @@ import { ProductService } from '../../services/models';
   </div>
 
   <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-    <div class="overflow-x-auto">
+    <div class="hidden md:block overflow-x-auto">
       <table class="w-full">
         <thead class="bg-gray-50 dark:bg-gray-800/50">
           <tr>
@@ -64,12 +64,35 @@ import { ProductService } from '../../services/models';
         </tbody>
       </table>
     </div>
+
+    <!-- Mobile cards -->
+    <div class="md:hidden divide-y divide-gray-100 dark:divide-gray-800">
+      <div *ngFor="let p of filtered" class="p-4 space-y-1">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{p.name}}</p>
+            <p class="text-xs text-gray-400 truncate">{{p.code}}</p>
+          </div>
+          <span [class]="'inline-flex px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ' + (p.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500')">{{i18n.t(p.is_active ? 'active' : 'inactive')}}</span>
+        </div>
+        <div class="flex items-end justify-between gap-2 pt-1">
+          <div>
+            <p class="text-sm font-semibold text-gray-900 dark:text-white">{{data.formatCurrency(p.unit_price)}}<span class="text-xs text-gray-400 font-normal">/{{p.unit}}</span></p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">{{i18n.t(p.type)}} · {{p.tax_rate ? p.tax_rate.rate + '%' : '—'}}</p>
+          </div>
+          <button *ngIf="perms.canEdit('products')" (click)="openEdit(p)" class="p-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          </button>
+        </div>
+      </div>
+      <div *ngIf="!filtered.length" class="text-center py-12 text-gray-400">{{i18n.t('no_data')}}</div>
+    </div>
   </div>
 </div>
 
 <app-modal [isOpen]="showModal" [title]="editing ? i18n.t('edit') : i18n.t('new_product')" (close)="showModal = false">
   <div class="space-y-4">
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{i18n.t('code')}}</label><input [(ngModel)]="form.code" type="text" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none"></div>
       <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{i18n.t('type')}}</label>
         <select [(ngModel)]="form.type" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none">

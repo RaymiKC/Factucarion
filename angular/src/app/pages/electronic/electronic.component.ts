@@ -22,11 +22,11 @@ import { EcfProviderConfig } from '../../services/models';
           <button (click)="config.mode = 'own_service'" [class]="'px-4 py-2 rounded-xl text-sm font-medium transition-colors ' + (config.mode === 'own_service' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300')">Servicio Propio</button>
         </div>
       </div>
-      <div *ngIf="config.mode === 'third_party'" class="grid grid-cols-2 gap-4">
+      <div *ngIf="config.mode === 'third_party'" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{i18n.t('provider')}}</label><input [(ngModel)]="config.third_party_provider" type="text" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none"></div>
         <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">API Key</label><input [(ngModel)]="config.third_party_api_key" type="password" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none"></div>
       </div>
-      <div *ngIf="config.mode === 'own_service'" class="grid grid-cols-2 gap-4">
+      <div *ngIf="config.mode === 'own_service'" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div class="col-span-2"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">URL</label><input [(ngModel)]="config.own_service_url" type="url" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none"></div>
         <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Token</label><input [(ngModel)]="config.own_service_token" type="password" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none"></div>
         <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ambiente</label>

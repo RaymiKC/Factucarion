@@ -13,6 +13,19 @@ body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
+/* Mobile: keep 16px form text so iOS never zooms on focus, and respect notches */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 5px;

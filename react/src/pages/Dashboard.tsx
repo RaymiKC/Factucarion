@@ -90,7 +90,7 @@ export default function Dashboard({ onNavigate, companyId }: DashboardProps) {
         </div>
         <button
           onClick={() => onNavigate('invoices')}
-          className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium px-4 py-2 rounded-lg whitespace-nowrap shrink-0 transition-colors"
         >
           <FileText size={15} />
           {t('new_invoice')}

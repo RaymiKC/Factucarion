@@ -64,7 +64,7 @@ import { EmailSchedule } from '../../services/models';
 <app-modal [isOpen]="showModal" [title]="editing ? i18n.t('edit') : 'Nueva Programación'" (close)="showModal = false">
   <div class="space-y-4">
     <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{i18n.t('name')}}</label><input [(ngModel)]="form.name" type="text" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none"></div>
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{i18n.t('trigger')}}</label>
         <select [(ngModel)]="form.trigger_event" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none">
           <option value="invoice_due">Vencimiento</option><option value="overdue">Vencida</option><option value="payment_reminder">Recordatorio</option><option value="custom">Personalizado</option>

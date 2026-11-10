@@ -36,7 +36,7 @@ interface InvoiceItemForm { description: string; quantity: number; unit_price: n
 
   <!-- Table -->
   <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-    <div class="overflow-x-auto">
+    <div class="hidden md:block overflow-x-auto">
       <table class="w-full">
         <thead class="bg-gray-50 dark:bg-gray-800/50">
           <tr>
@@ -83,13 +83,56 @@ interface InvoiceItemForm { description: string; quantity: number; unit_price: n
         </tbody>
       </table>
     </div>
+
+    <!-- Mobile cards -->
+    <div class="md:hidden divide-y divide-gray-100 dark:divide-gray-800">
+      <div *ngFor="let inv of filteredInvoices" class="p-4 space-y-3">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <p class="text-sm font-semibold text-gray-900 dark:text-white">{{inv.invoice_number}}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{{inv.client?.name ?? '—'}}</p>
+            <p *ngIf="inv.ncf" class="text-[11px] font-mono text-gray-400 truncate">{{inv.ncf}}</p>
+          </div>
+          <span [class]="'inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium shrink-0 ' + data.getStatusColor(inv.status)">{{i18n.t(inv.status)}}</span>
+        </div>
+
+        <div class="flex items-end justify-between gap-3">
+          <div class="text-xs text-gray-500 dark:text-gray-400 space-y-0.5 min-w-0">
+            <p>{{data.formatDate(inv.issue_date)}}</p>
+            <p *ngIf="inv.due_date" [class]="isDueSoon(inv) ? 'text-red-500 font-medium' : ''">{{i18n.t('due_date')}}: {{data.formatDate(inv.due_date)}}</p>
+          </div>
+          <div class="text-right shrink-0">
+            <p class="text-base font-bold text-gray-900 dark:text-white">{{data.formatCurrency(inv.total, inv.currency)}}</p>
+            <p *ngIf="inv.amount_paid > 0 && inv.amount_paid < inv.total" class="text-[11px] text-gray-400">{{i18n.t('paid')}}: {{data.formatCurrency(inv.amount_paid, inv.currency)}}</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <button (click)="viewInvoice(inv)" class="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-xs font-medium whitespace-nowrap">
+            {{i18n.t('view_detail')}}
+          </button>
+          <button (click)="openPrint(inv)" class="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 text-xs font-medium whitespace-nowrap">
+            {{i18n.t('print')}}
+          </button>
+          <button *ngIf="perms.canEdit('invoices') && inv.status !== 'paid' && inv.status !== 'void'" (click)="markPaid(inv)"
+            class="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-xs font-medium whitespace-nowrap">
+            {{i18n.t('mark_paid')}}
+          </button>
+          <button *ngIf="perms.canEdit('invoices')" (click)="openEdit(inv)"
+            class="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-medium whitespace-nowrap">
+            {{i18n.t('edit')}}
+          </button>
+        </div>
+      </div>
+      <div *ngIf="!filteredInvoices.length" class="text-center py-12 text-gray-400">{{i18n.t('no_data')}}</div>
+    </div>
   </div>
 </div>
 
 <!-- Invoice Form Modal -->
 <app-modal [isOpen]="showModal" [title]="editing ? i18n.t('edit') + ' ' + i18n.t('invoices') : i18n.t('new_invoice')" (close)="showModal = false">
   <div class="space-y-4">
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{i18n.t('client')}}</label>
         <select [(ngModel)]="form.client_id" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none">
@@ -130,13 +173,13 @@ interface InvoiceItemForm { description: string; quantity: number; unit_price: n
         <button (click)="addItem()" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">+ {{i18n.t('add_item')}}</button>
       </div>
       <div class="space-y-2">
-        <div *ngFor="let item of formItems; let i = index" class="grid grid-cols-12 gap-2 items-center">
-          <input [(ngModel)]="item.description" type="text" placeholder="Descripción" class="col-span-4 px-2 py-1.5 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg text-xs text-gray-900 dark:text-white focus:outline-none">
-          <input [(ngModel)]="item.quantity" type="number" placeholder="Cant" class="col-span-2 px-2 py-1.5 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg text-xs text-gray-900 dark:text-white focus:outline-none">
-          <input [(ngModel)]="item.unit_price" type="number" placeholder="Precio" step="0.01" class="col-span-2 px-2 py-1.5 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg text-xs text-gray-900 dark:text-white focus:outline-none">
-          <input [(ngModel)]="item.tax_rate" type="number" placeholder="%" class="col-span-2 px-2 py-1.5 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg text-xs text-gray-900 dark:text-white focus:outline-none">
-          <div class="col-span-1 text-right text-xs font-medium text-gray-900 dark:text-white">{{data.formatCurrency(itemTotal(item))}}</div>
-          <button (click)="removeItem(i)" type="button" class="col-span-1 text-gray-400 hover:text-red-500 text-center">×</button>
+        <div *ngFor="let item of formItems; let i = index" class="grid grid-cols-2 md:grid-cols-12 gap-2 items-center border border-gray-100 dark:border-gray-800 md:border-0 rounded-xl md:rounded-none p-2 md:p-0">
+          <input [(ngModel)]="item.description" type="text" placeholder="Descripción" class="col-span-2 md:col-span-4 px-2 py-2 md:py-1.5 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg text-xs text-gray-900 dark:text-white focus:outline-none">
+          <input [(ngModel)]="item.quantity" type="number" placeholder="Cant" class="col-span-1 md:col-span-2 px-2 py-2 md:py-1.5 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg text-xs text-gray-900 dark:text-white focus:outline-none">
+          <input [(ngModel)]="item.unit_price" type="number" placeholder="Precio" step="0.01" class="col-span-1 md:col-span-2 px-2 py-2 md:py-1.5 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg text-xs text-gray-900 dark:text-white focus:outline-none">
+          <input [(ngModel)]="item.tax_rate" type="number" placeholder="%" class="col-span-1 md:col-span-2 px-2 py-2 md:py-1.5 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg text-xs text-gray-900 dark:text-white focus:outline-none">
+          <div class="col-span-1 md:col-span-1 text-right text-xs font-medium text-gray-900 dark:text-white">{{data.formatCurrency(itemTotal(item))}}</div>
+          <button (click)="removeItem(i)" type="button" class="col-span-2 md:col-span-1 text-right md:text-center text-gray-400 hover:text-red-500 py-1">×</button>
         </div>
       </div>
       <!-- Totals -->
@@ -163,7 +206,7 @@ interface InvoiceItemForm { description: string; quantity: number; unit_price: n
 <!-- Invoice Detail Modal -->
 <app-modal *ngIf="viewingInvoice" [isOpen]="!!viewingInvoice" [title]="viewingInvoice.invoice_number" (close)="viewingInvoice = null">
   <div class="space-y-4">
-    <div class="grid grid-cols-2 gap-3 text-sm">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
       <div><span class="text-gray-500">{{i18n.t('client')}}:</span> <span class="font-medium text-gray-900 dark:text-white">{{viewingInvoice.client?.name ?? '—'}}</span></div>
       <div><span class="text-gray-500">{{i18n.t('status')}}:</span> <span [class]="'ml-1 inline-flex px-2 py-0.5 rounded-full text-xs font-medium ' + data.getStatusColor(viewingInvoice.status)">{{i18n.t(viewingInvoice.status)}}</span></div>
       <div><span class="text-gray-500">{{i18n.t('issue_date')}}:</span> <span class="text-gray-900 dark:text-white">{{data.formatDate(viewingInvoice.issue_date)}}</span></div>

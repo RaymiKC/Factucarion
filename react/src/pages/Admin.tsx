@@ -881,7 +881,7 @@ export default function Admin({ companyId }: AdminProps = {}) {
           </button>
           {hasUnsavedChanges && (
             <button onClick={saveSettings}
-              className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+              className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium px-4 py-2 rounded-lg whitespace-nowrap shrink-0 transition-colors">
               {saved ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
               {saved ? 'Guardado!' : 'Guardar Cambios'}
             </button>
@@ -1010,7 +1010,7 @@ export default function Admin({ companyId }: AdminProps = {}) {
 
           <div className="flex justify-end">
             <button onClick={saveSettings} disabled={!hasUnsavedChanges}
-              className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">
+              className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium px-4 py-2 rounded-lg whitespace-nowrap shrink-0 disabled:opacity-50">
               <Save size={14} />{saved ? 'Guardado!' : 'Guardar'}
             </button>
           </div>
@@ -1077,7 +1077,7 @@ export default function Admin({ companyId }: AdminProps = {}) {
 
           <div className="flex justify-end">
             <button onClick={saveSettings} disabled={!hasUnsavedChanges}
-              className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">
+              className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium px-4 py-2 rounded-lg whitespace-nowrap shrink-0 disabled:opacity-50">
               <Save size={14} />{saved ? 'Guardado!' : 'Guardar'}
             </button>
           </div>
@@ -1139,7 +1139,7 @@ export default function Admin({ companyId }: AdminProps = {}) {
           </div>
           <div className="flex justify-end">
             <button onClick={saveSettings} disabled={!hasUnsavedChanges}
-              className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">
+              className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium px-4 py-2 rounded-lg whitespace-nowrap shrink-0 disabled:opacity-50">
               <Save size={14} />{saved ? 'Guardado!' : 'Guardar'}
             </button>
           </div>
@@ -1171,7 +1171,7 @@ export default function Admin({ companyId }: AdminProps = {}) {
           </div>
           <div className="flex justify-end">
             <button onClick={saveSettings} disabled={!hasUnsavedChanges}
-              className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">
+              className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium px-4 py-2 rounded-lg whitespace-nowrap shrink-0 disabled:opacity-50">
               <Save size={14} />{saved ? 'Guardado!' : 'Guardar'}
             </button>
           </div>
@@ -1454,7 +1454,7 @@ export default function Admin({ companyId }: AdminProps = {}) {
               className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
               placeholder="Mi Empresa S.R.L." />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">RNC</label>
               <input type="text" value={companyForm.rnc} onChange={e => setCompanyForm(f => ({ ...f, rnc: e.target.value }))}
@@ -1476,7 +1476,7 @@ export default function Admin({ companyId }: AdminProps = {}) {
             <input type="text" value={companyForm.address} onChange={e => setCompanyForm(f => ({ ...f, address: e.target.value }))}
               className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500" />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Teléfono</label>
               <input type="text" value={companyForm.phone} onChange={e => setCompanyForm(f => ({ ...f, phone: e.target.value }))}

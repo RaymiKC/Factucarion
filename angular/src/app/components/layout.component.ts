@@ -1,5 +1,6 @@
-import { Component, Input, Output, EventEmitter, OnInit, computed } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { ThemeService } from '../services/theme.service';
@@ -13,20 +14,23 @@ import { PermissionsService } from '../services/permissions.service';
   imports: [CommonModule, RouterModule],
   template: `
 <div class="flex h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden">
-  <!-- Sidebar -->
-  <aside [class]="'flex flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transition-all duration-300 ' + (sidebarOpen ? 'w-64' : 'w-16')">
+  <!-- Mobile drawer backdrop -->
+  <div *ngIf="mobileOpen" class="md:hidden fixed inset-0 z-30 bg-black/50" (click)="mobileOpen = false"></div>
+
+  <!-- Sidebar (desktop rail + mobile drawer) -->
+  <aside [class]="'flex flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transition-all duration-300 fixed md:static inset-y-0 left-0 z-40 w-72 ' + (mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0') + ' ' + (sidebarOpen ? 'md:w-64' : 'md:w-16')">
     <!-- Logo -->
     <div class="flex items-center h-16 px-4 border-b border-gray-200 dark:border-gray-800 shrink-0">
       <div class="flex items-center gap-3 overflow-hidden">
         <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shrink-0">
           <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
         </div>
-        <span *ngIf="sidebarOpen" class="font-bold text-gray-900 dark:text-white text-lg whitespace-nowrap">FacturaPro</span>
+        <span *ngIf="sidebarOpen || mobileOpen" class="font-bold text-gray-900 dark:text-white text-lg whitespace-nowrap">FacturaPro</span>
       </div>
     </div>
 
     <!-- Company switcher -->
-    <div *ngIf="sidebarOpen && companies.length > 1" class="px-3 py-2 border-b border-gray-200 dark:border-gray-800">
+    <div *ngIf="(sidebarOpen || mobileOpen) && companies.length > 1" class="px-3 py-2 border-b border-gray-200 dark:border-gray-800">
       <select (change)="onCompanyChange($event)" [value]="currentCompany?.id ?? ''"
         class="w-full text-xs bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-gray-700 dark:text-gray-300 focus:outline-none">
         <option *ngFor="let c of companies" [value]="c.id">{{c.name}}</option>
@@ -35,11 +39,11 @@ import { PermissionsService } from '../services/permissions.service';
 
     <!-- Nav -->
     <nav class="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
-      <ng-container *ngFor="let item of navItems">
+      <ng-container *ngFor="let item of safeNavItems">
         <button *ngIf="perms.canView(item.key)" (click)="navigate(item.key)"
           [class]="'flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all ' + (activePage === item.key ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white')">
           <span class="shrink-0" [innerHTML]="item.icon"></span>
-          <span *ngIf="sidebarOpen" class="truncate whitespace-nowrap">{{i18n.t(item.key)}}</span>
+          <span *ngIf="sidebarOpen || mobileOpen" class="truncate whitespace-nowrap">{{i18n.t(item.key)}}</span>
         </button>
       </ng-container>
     </nav>
@@ -47,7 +51,7 @@ import { PermissionsService } from '../services/permissions.service';
     <!-- Bottom controls -->
     <div class="border-t border-gray-200 dark:border-gray-800 p-2 space-y-0.5 shrink-0">
       <!-- Lang -->
-      <div *ngIf="sidebarOpen" class="flex gap-1 px-1 pb-1">
+      <div *ngIf="sidebarOpen || mobileOpen" class="flex gap-1 px-1 pb-1">
         <button *ngFor="let l of langs" (click)="setLang(l.code)"
           [class]="'flex-1 text-xs py-1 rounded-lg font-medium transition-colors ' + (i18n.lang() === l.code ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800')">
           {{l.label}}
@@ -61,10 +65,10 @@ import { PermissionsService } from '../services/permissions.service';
         <span *ngIf="!themeService.isDark()" class="w-5 h-5 shrink-0">
           <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
         </span>
-        <span *ngIf="sidebarOpen">{{i18n.t(themeService.isDark() ? 'light' : 'dark')}}</span>
+        <span *ngIf="sidebarOpen || mobileOpen">{{i18n.t(themeService.isDark() ? 'light' : 'dark')}}</span>
       </button>
       <!-- User -->
-      <div *ngIf="sidebarOpen && auth.user() as user" class="flex items-center gap-2 px-3 py-2">
+      <div *ngIf="(sidebarOpen || mobileOpen) && auth.user() as user" class="flex items-center gap-2 px-3 py-2">
         <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center shrink-0">
           <span class="text-sm font-semibold text-blue-600 dark:text-blue-400">{{user.name.charAt(0).toUpperCase()}}</span>
         </div>
@@ -76,7 +80,7 @@ import { PermissionsService } from '../services/permissions.service';
       <!-- Logout -->
       <button (click)="onLogout()" class="flex items-center gap-3 w-full px-3 py-2 rounded-xl text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
         <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-        <span *ngIf="sidebarOpen">{{i18n.t('logout')}}</span>
+        <span *ngIf="sidebarOpen || mobileOpen">{{i18n.t('logout')}}</span>
       </button>
     </div>
   </aside>
@@ -85,20 +89,38 @@ import { PermissionsService } from '../services/permissions.service';
   <div class="flex-1 flex flex-col overflow-hidden">
     <!-- Top bar -->
     <header class="flex items-center h-16 px-4 md:px-6 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shrink-0 gap-4">
-      <button (click)="sidebarOpen = !sidebarOpen" class="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+      <button (click)="mobileOpen = true" class="md:hidden p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
       </button>
-      <div class="flex-1">
-        <h1 class="text-lg font-semibold text-gray-900 dark:text-white capitalize">{{i18n.t(activePage)}}</h1>
+      <button (click)="sidebarOpen = !sidebarOpen" class="hidden md:block p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <div class="flex-1 min-w-0">
+        <h1 class="text-lg font-semibold text-gray-900 dark:text-white capitalize truncate">{{i18n.t(activePage)}}</h1>
       </div>
-      <div *ngIf="currentCompany" class="hidden md:block text-sm text-gray-500 dark:text-gray-400">{{currentCompany.name}}</div>
+      <div *ngIf="currentCompany" class="hidden md:block text-sm text-gray-500 dark:text-gray-400 truncate max-w-[40%]">{{currentCompany.name}}</div>
     </header>
 
     <!-- Page content -->
-    <main class="flex-1 overflow-y-auto p-4 md:p-6">
+    <main class="flex-1 overflow-y-auto p-4 md:p-6 pb-20 md:pb-6">
       <ng-content></ng-content>
     </main>
   </div>
+
+  <!-- Mobile bottom navigation -->
+  <nav class="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 safe-bottom">
+    <div class="flex items-stretch">
+      <button *ngFor="let item of bottomNavItems" (click)="navigate(item.key)"
+        [class]="'flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] ' + (activePage === item.key ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400')">
+        <span class="w-5 h-5" [innerHTML]="item.icon"></span>
+        <span class="w-full text-center text-[10px] font-medium truncate px-1">{{i18n.t(item.key)}}</span>
+      </button>
+      <button (click)="mobileOpen = true" class="flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] text-gray-500 dark:text-gray-400">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01"/></svg>
+        <span class="text-[10px] font-medium">{{i18n.t('nav_more')}}</span>
+      </button>
+    </div>
+  </nav>
 </div>
   `
 })
@@ -108,6 +130,7 @@ export class LayoutComponent implements OnInit {
   @Output() logoutEvent = new EventEmitter<void>();
 
   sidebarOpen = true;
+  mobileOpen = false;
   langs = [{ code: 'es' as Lang, label: 'ES' }, { code: 'en' as Lang, label: 'EN' }, { code: 'fr' as Lang, label: 'FR' }];
 
   navItems = [
@@ -128,20 +151,30 @@ export class LayoutComponent implements OnInit {
   get companies(): Company[] { return this.companyService.companies(); }
   get currentCompany(): Company | null { return this.companyService.currentCompany(); }
 
+  get bottomNavItems() {
+    const keys = ['dashboard', 'invoices', 'clients', 'products'];
+    return this.safeNavItems.filter(item => keys.includes(item.key) && this.perms.canView(item.key));
+  }
+
+  private sanitizer = inject(DomSanitizer);
+  safeNavItems: { key: string; icon: SafeHtml }[] = [];
+
   constructor(
     public auth: AuthService,
     public themeService: ThemeService,
     public i18n: I18nService,
     private companyService: CompanyService,
     public perms: PermissionsService,
-  ) {}
+  ) {
+    this.safeNavItems = this.navItems.map(item => ({ key: item.key, icon: this.sanitizer.bypassSecurityTrustHtml(item.icon) }));
+  }
 
   ngOnInit() {
     const u = this.auth.user();
     if (u) this.perms.load(u.id, u.role);
   }
 
-  navigate(page: string) { this.pageChange.emit(page); }
+  navigate(page: string) { this.mobileOpen = false; this.pageChange.emit(page); }
 
   setLang(l: Lang) { this.i18n.setLang(l); }
 

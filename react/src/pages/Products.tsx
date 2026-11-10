@@ -70,7 +70,7 @@ export default function Products({ companyId }: ProductsProps) {
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{products.filter(p => p.is_active).length} ítems activos en catálogo</p>
         </div>
         {canCreate('products') && (
-          <button onClick={openCreate} className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+          <button onClick={openCreate} className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium px-4 py-2 rounded-lg whitespace-nowrap shrink-0 transition-colors">
             <Plus size={15} /> {t('new_product')}
           </button>
         )}
@@ -95,7 +95,7 @@ export default function Products({ companyId }: ProductsProps) {
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{t('add_first_product')}</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
@@ -156,6 +156,46 @@ export default function Products({ companyId }: ProductsProps) {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {!loading && filtered.length > 0 && (
+          <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+            {filtered.map(p => (
+              <div key={p.id} className="p-4 flex items-start gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${p.type === 'product' ? 'bg-amber-100' : 'bg-blue-100'}`}>
+                  {p.type === 'product' ? <Package size={16} className="text-amber-600" /> : <Wrench size={16} className="text-blue-600" />}
+                </div>
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">{p.name}</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
+                        {p.type === 'product' ? t('product_type_product') : t('product_type_service')}
+                        {p.code ? ` · ${p.code}` : ''}
+                      </p>
+                    </div>
+                    <button onClick={() => toggleActive(p)}
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${p.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                      {p.is_active ? t('active') : t('inactive')}
+                    </button>
+                  </div>
+                  <div className="flex items-end justify-between gap-2 pt-1">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                        {formatCurrency(p.unit_price)}<span className="text-xs text-slate-400 dark:text-slate-500 font-normal">/{p.unit}</span>
+                      </p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500">{p.tax_rate ? `${p.tax_rate.rate}%` : 'Exento'}</p>
+                    </div>
+                    {canEdit('products') && (
+                      <button onClick={() => openEdit(p)} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400">
+                        <Edit2 size={15} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

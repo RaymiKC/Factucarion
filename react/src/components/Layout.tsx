@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Users, FileText, Package, Bell, Settings,
   ChevronLeft, ChevronRight, Zap, Mail, Shield, LogOut, Menu,
   CreditCard, TrendingUp, Building2, ChevronDown, Check, Plus,
-  Sun, Moon, Globe, Code2, BarChart3
+  Sun, Moon, Globe, Code2, BarChart3, MoreHorizontal
 } from 'lucide-react';
 import { useNotifications } from '../lib/hooks';
 import { useAuth } from '../lib/auth';
@@ -74,6 +74,7 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
   ];
 
   const navItems = isAdmin ? allNavItems : allNavItems.filter(item => canView(item.id));
+  const bottomNavItems = navItems.filter(item => ['dashboard', 'invoices', 'clients', 'products'].includes(item.id));
 
   const Sidebar = ({ mobile = false }) => (
     <div className={`flex flex-col h-full bg-slate-900 dark:bg-slate-950 text-white ${mobile ? 'w-72' : collapsed ? 'w-16' : 'w-64'} transition-all duration-300`}>
@@ -315,10 +316,40 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-900">
+        <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-900 pb-16 md:pb-0">
           {children}
         </main>
       </div>
+
+      {/* Mobile bottom navigation */}
+      <nav
+        className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 safe-bottom"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-stretch">
+          {bottomNavItems.map(({ id, label, icon: Icon }) => {
+            const active = currentPage === id;
+            return (
+              <button
+                key={id}
+                onClick={() => onNavigate(id)}
+                aria-current={active ? 'page' : undefined}
+                className={`flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] transition-colors ${active ? 'text-sky-600 dark:text-sky-400' : 'text-slate-500 dark:text-slate-400'}`}
+              >
+                <Icon size={20} />
+                <span className="w-full text-center text-[10px] font-medium truncate px-1">{label}</span>
+              </button>
+            );
+          })}
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] text-slate-500 dark:text-slate-400"
+          >
+            <MoreHorizontal size={20} />
+            <span className="text-[10px] font-medium">{t('nav_more') as string}</span>
+          </button>
+        </div>
+      </nav>
     </div>
   );
 }

@@ -1,5 +1,6 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { DomSanitizer } from '@angular/platform-browser';
 import { I18nService } from '../../services/i18n.service';
 import { DataService } from '../../services/data.service';
 import { CompanyService } from '../../services/company.service';
@@ -79,6 +80,8 @@ import { Router } from '@angular/router';
   `
 })
 export class DashboardComponent implements OnInit {
+  private sanitizer = inject(DomSanitizer);
+
   constructor(public i18n: I18nService, public data: DataService, private company: CompanyService, public router: Router) {}
 
   ngOnInit() { this.data.loadAll(this.company.currentCompany()?.id); }
@@ -99,7 +102,7 @@ export class DashboardComponent implements OnInit {
       { label: this.i18n.t('collected_this_month'), value: this.data.formatCurrency(collectedThisMonth), iconBg: 'bg-blue-100 dark:bg-blue-900/20', iconColor: 'text-blue-600 dark:text-blue-400', icon: '<svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>' },
       { label: this.i18n.t('total_invoices'), value: String(invs.length), iconBg: 'bg-gray-100 dark:bg-gray-800', iconColor: 'text-gray-600 dark:text-gray-400', icon: '<svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>' },
       { label: this.i18n.t('active_clients'), value: String(this.data.clients().filter(c => c.is_active).length), iconBg: 'bg-teal-100 dark:bg-teal-900/20', iconColor: 'text-teal-600 dark:text-teal-400', icon: '<svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>' },
-    ];
+    ].map(card => ({ ...card, icon: this.sanitizer.bypassSecurityTrustHtml(card.icon) }));
   }
 
   get monthlyData() {

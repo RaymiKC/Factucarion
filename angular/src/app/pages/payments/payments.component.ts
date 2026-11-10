@@ -32,7 +32,7 @@ import { CompanyService } from '../../services/company.service';
 
   <!-- Table -->
   <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-    <div class="overflow-x-auto">
+    <div class="hidden md:block overflow-x-auto">
       <table class="w-full">
         <thead class="bg-gray-50 dark:bg-gray-800/50">
           <tr>
@@ -56,6 +56,24 @@ import { CompanyService } from '../../services/company.service';
           <tr *ngIf="!filtered.length"><td colspan="5" class="text-center py-12 text-gray-400">{{i18n.t('no_data')}}</td></tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Mobile cards -->
+    <div class="md:hidden divide-y divide-gray-100 dark:divide-gray-800">
+      <div *ngFor="let p of filtered" class="p-4 space-y-2">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <p class="text-sm font-semibold text-gray-900 dark:text-white">{{getInvoiceNumber(p.invoice_id)}}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">{{data.formatDate(p.payment_date)}}</p>
+          </div>
+          <p class="text-base font-bold text-green-600 dark:text-green-400 shrink-0">{{data.formatCurrency(p.amount)}}</p>
+        </div>
+        <div class="flex items-center justify-between gap-2">
+          <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">{{i18n.t(p.payment_method)}}</span>
+          <span *ngIf="p.reference" class="text-xs text-gray-500 dark:text-gray-400 font-mono truncate">{{p.reference}}</span>
+        </div>
+      </div>
+      <div *ngIf="!filtered.length" class="text-center py-12 text-gray-400">{{i18n.t('no_data')}}</div>
     </div>
   </div>
 </div>

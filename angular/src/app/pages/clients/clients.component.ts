@@ -27,7 +27,7 @@ import { Client } from '../../services/models';
 
   <!-- Table -->
   <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-    <div class="overflow-x-auto">
+    <div class="hidden md:block overflow-x-auto">
       <table class="w-full">
         <thead class="bg-gray-50 dark:bg-gray-800/50">
           <tr>
@@ -70,13 +70,42 @@ import { Client } from '../../services/models';
         </tbody>
       </table>
     </div>
+
+    <!-- Mobile cards -->
+    <div class="md:hidden divide-y divide-gray-100 dark:divide-gray-800">
+      <div *ngFor="let client of filteredClients" class="p-4 space-y-1">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{client.name}}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{client.rnc || client.cedula}}</p>
+          </div>
+          <span [class]="'inline-flex px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ' + (client.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400')">
+            {{i18n.t(client.is_active ? 'active' : 'inactive')}}
+          </span>
+        </div>
+        <p *ngIf="client.email" class="text-xs text-gray-500 dark:text-gray-400 truncate">{{client.email}}</p>
+        <p *ngIf="client.phone" class="text-xs text-gray-500 dark:text-gray-400">{{client.phone}}</p>
+        <div class="flex items-center justify-between pt-1">
+          <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">{{i18n.t(client.client_type)}}</span>
+          <div class="flex gap-1">
+            <button *ngIf="perms.canEdit('clients')" (click)="openEdit(client)" class="p-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            </button>
+            <button *ngIf="perms.canDelete('clients')" (click)="confirmDelete(client)" class="p-2 text-gray-500 dark:text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div *ngIf="!filteredClients.length" class="text-center py-12 text-gray-400">{{i18n.t('no_data')}}</div>
+    </div>
   </div>
 </div>
 
 <!-- Create/Edit Modal -->
 <app-modal [isOpen]="showModal" [title]="editing ? i18n.t('edit') + ' ' + i18n.t('client') : i18n.t('new_client')" (close)="showModal = false">
   <div class="space-y-4">
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div class="col-span-2">
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{i18n.t('name')}} *</label>
         <input [(ngModel)]="form.name" type="text" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">

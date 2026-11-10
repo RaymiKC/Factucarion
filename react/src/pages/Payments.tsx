@@ -112,7 +112,7 @@ export default function Payments({ companyId }: PaymentsProps) {
             <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{t('no_payments')}</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
@@ -151,6 +151,31 @@ export default function Payments({ companyId }: PaymentsProps) {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {!loading && filtered.length > 0 && (
+          <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+            {filtered.map(p => (
+              <div key={p.id} className="p-4 space-y-2">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{p.invoice?.invoice_number ?? '-'}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                      {(p.invoice?.client as Client | undefined)?.name ?? '-'}
+                    </p>
+                  </div>
+                  <p className="text-base font-bold text-emerald-600 shrink-0">{formatCurrency(p.amount)}</p>
+                </div>
+                <div className="flex items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
+                  <span>{formatDate(p.payment_date)}</span>
+                  <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded font-medium">
+                    {methodLabels[p.payment_method] ?? p.payment_method}
+                  </span>
+                </div>
+                {p.reference && <p className="text-xs text-slate-400 dark:text-slate-500 font-mono truncate">{p.reference}</p>}
+              </div>
+            ))}
           </div>
         )}
       </div>

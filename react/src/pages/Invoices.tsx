@@ -388,7 +388,7 @@ export default function Invoices({ companyId }: InvoicesProps = {}) {
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{invoices.length} {t('invoices_total')}</p>
         </div>
         {tab === 'facturas' && canCreate('invoices') && (
-          <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+          <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium px-4 py-2 rounded-lg whitespace-nowrap shrink-0 transition-colors">
             <Plus size={15} /> {t('new_invoice')}
           </button>
         )}
@@ -401,7 +401,7 @@ export default function Invoices({ companyId }: InvoicesProps = {}) {
       </div>
 
       {/* ── Tab selector ── */}
-      <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-fit">
+      <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-fit max-w-full overflow-x-auto">
         {([
           { id: 'facturas',   label: 'Facturas',        icon: FileText },
           { id: 'secuencias', label: 'Secuencias NCF',  icon: Hash },
@@ -410,7 +410,7 @@ export default function Invoices({ companyId }: InvoicesProps = {}) {
           <button
             key={id}
             onClick={() => setTab(id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === id ? 'bg-white dark:bg-slate-900 shadow-sm text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${tab === id ? 'bg-white dark:bg-slate-900 shadow-sm text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
           >
             <Icon size={14} />
             {label}
@@ -476,7 +476,7 @@ export default function Invoices({ companyId }: InvoicesProps = {}) {
                 <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{t('create_first_invoice')}</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
@@ -563,6 +563,83 @@ export default function Invoices({ companyId }: InvoicesProps = {}) {
                     })}
                   </tbody>
                 </table>
+              </div>
+            )}
+
+            {!loading && filtered.length > 0 && (
+              <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+                {filtered.map(inv => {
+                  const days = getDaysUntilDue(inv.due_date);
+                  const canPay = canEdit('invoices') && ['sent', 'partial', 'overdue'].includes(inv.status);
+                  return (
+                    <div key={inv.id} className="p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{inv.invoice_number}</p>
+                            {inv.invoice_type === 'recurring' && (
+                              <span className="inline-flex items-center gap-0.5 text-[10px] bg-teal-100 text-teal-700 px-1.5 py-0.5 rounded font-medium">
+                                <RefreshCw size={9} /> Recurrente
+                              </span>
+                            )}
+                            {inv.is_electronic && <span className="text-[10px] bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded font-medium">e-CF</span>}
+                          </div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                            {(inv.client as Client | undefined)?.name ?? '-'}
+                          </p>
+                        </div>
+                        <StatusBadge status={inv.status} />
+                      </div>
+
+                      <div className="flex items-end justify-between gap-3">
+                        <div className="text-xs text-slate-500 dark:text-slate-400 space-y-0.5 min-w-0">
+                          <p>{formatDate(inv.issue_date)}</p>
+                          {inv.due_date && (
+                            <p className={days !== null && days < 0 && inv.status !== 'paid' ? 'text-red-500 font-medium' : ''}>
+                              {t('due_date')}: {formatDate(inv.due_date)}
+                            </p>
+                          )}
+                          {inv.ncf && <p className="font-mono text-[11px] text-slate-400 dark:text-slate-500 truncate">{inv.ncf}</p>}
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-base font-bold text-slate-800 dark:text-slate-100">{formatCurrency(inv.total)}</p>
+                          {inv.amount_paid > 0 && inv.amount_paid < inv.total && (
+                            <p className="text-[11px] text-slate-400 dark:text-slate-500">{t('paid_label')}: {formatCurrency(inv.amount_paid)}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <button onClick={() => setViewInvoice(inv)}
+                          className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-medium whitespace-nowrap">
+                          <Eye size={14} /> {t('view_detail')}
+                        </button>
+                        <button onClick={() => setPrintInvoice(inv)}
+                          className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 text-xs font-medium whitespace-nowrap">
+                          <Printer size={14} /> {t('preview_print')}
+                        </button>
+                        {canEdit('invoices') && inv.status === 'draft' && (
+                          <button onClick={() => updateStatus(inv.id, 'sent')}
+                            className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-medium whitespace-nowrap">
+                            <Send size={14} /> {t('send_invoice')}
+                          </button>
+                        )}
+                        {canPay && (
+                          <button onClick={() => { setPayModal(inv); setPayForm(f => ({ ...f, amount: inv.total - inv.amount_paid })); }}
+                            className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-xs font-medium whitespace-nowrap">
+                            <CreditCard size={14} /> {t('register_payment')}
+                          </button>
+                        )}
+                        {canDelete('invoices') && ['draft', 'sent'].includes(inv.status) && (
+                          <button onClick={() => setCancelConfirm(inv)}
+                            className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-medium whitespace-nowrap">
+                            <Trash2 size={14} /> {t('cancel')}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -926,7 +1003,7 @@ export default function Invoices({ companyId }: InvoicesProps = {}) {
                 <Plus size={12} /> {t('add_line')}
               </button>
             </div>
-            <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+            <div className="hidden md:block border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
               <table className="w-full text-xs">
                 <thead className="bg-slate-50 dark:bg-slate-800/50">
                   <tr>
@@ -976,6 +1053,62 @@ export default function Invoices({ companyId }: InvoicesProps = {}) {
                   })}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile line-item editor */}
+            <div className="md:hidden space-y-3">
+              {lineItems.map(item => {
+                const c = calcLine(item);
+                return (
+                  <div key={item.id} className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <select value={item.product_id ?? ''} onChange={e => {
+                        const p = products.find(x => x.id === e.target.value);
+                        if (p) selectProduct(item.id, p);
+                        else updateLine(item.id, 'product_id', e.target.value || null);
+                      }} className="flex-1 min-w-0 border border-slate-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                        <option value="">Personalizado...</option>
+                        {products.filter(p => p.is_active).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                      </select>
+                      {lineItems.length > 1 && (
+                        <button onClick={() => removeLine(item.id)} aria-label={t('delete')}
+                          className="p-2 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 shrink-0">
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                    <input type="text" value={item.description} onChange={e => updateLine(item.id, 'description', e.target.value)}
+                      placeholder={t('description')}
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500" />
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className="block">
+                        <span className="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">{t('quantity')}</span>
+                        <input type="number" value={item.quantity} onChange={e => updateLine(item.id, 'quantity', parseFloat(e.target.value) || 0)} min={0} step={0.001}
+                          className="w-full text-right border border-slate-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" />
+                      </label>
+                      <label className="block">
+                        <span className="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">{t('price')}</span>
+                        <input type="number" value={item.unit_price} onChange={e => updateLine(item.id, 'unit_price', parseFloat(e.target.value) || 0)} min={0} step={0.01}
+                          className="w-full text-right border border-slate-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" />
+                      </label>
+                      <label className="block">
+                        <span className="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">{regionConfig.taxLabel} %</span>
+                        <input type="number" value={item.tax_rate} onChange={e => updateLine(item.id, 'tax_rate', parseFloat(e.target.value) || 0)} min={0} max={100}
+                          className="w-full text-right border border-slate-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" />
+                      </label>
+                      <label className="block">
+                        <span className="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">{t('discount_pct')}</span>
+                        <input type="number" value={item.discount_percent} onChange={e => updateLine(item.id, 'discount_percent', parseFloat(e.target.value) || 0)} min={0} max={100}
+                          className="w-full text-right border border-slate-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" />
+                      </label>
+                    </div>
+                    <div className="flex items-center justify-between text-xs pt-0.5">
+                      <span className="text-slate-500 dark:text-slate-400">{t('total')}</span>
+                      <span className="font-semibold text-slate-700 dark:text-slate-200">{formatCurrency(c.total)}</span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -1071,7 +1204,7 @@ export default function Invoices({ companyId }: InvoicesProps = {}) {
             <input type="number" value={payForm.amount} onChange={e => setPayForm(f => ({ ...f, amount: parseFloat(e.target.value) || 0 }))}
               className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500" min={0} step={0.01} />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('payment_method')}</label>
               <select value={payForm.payment_method} onChange={e => setPayForm(f => ({ ...f, payment_method: e.target.value as typeof payForm.payment_method }))}
@@ -1207,7 +1340,7 @@ function InvoiceDetail({ invoice }: { invoice: Invoice }) {
 
   return (
     <div className="p-6 space-y-5">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <p className="text-xs text-slate-400 dark:text-slate-500">{t('client')}</p>
           <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{(invoice.client as Client | undefined)?.name ?? '-'}</p>
